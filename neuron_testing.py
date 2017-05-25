@@ -17,7 +17,7 @@ syn_dep_param = {
 	'delay'   : 1.5, # time delay (ms)
 	'tau_rec' : 50.0 # facilitation time (ms)
 }
-nest.SetDefaults('iaf_psc_exp', neuron_param) # LIF neuron model with exponential PSCs
-nest.SetDefaults('static_synapse', syn_static_param) # synapse model with static connections
-nest.SetDefaults('tsodyks2_synapse', syn_dep_param) # Tsodyks-Markram synapse model with ST plasticity
+nest.SetDefaults('iaf_psc_exp', neuron_param) # LIF neuron w/ exponential PSCs
+nest.SetDefaults('static_synapse', syn_static_param) # standard static synapse
+nest.SetDefaults('tsodyks2_synapse', syn_dep_param) # Tsodyks-Markram synapse
 nest.ResetKernel()

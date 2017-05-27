@@ -11,13 +11,12 @@ neuron_param = {
 	'E_L'     : -70.0, # resting membrane potential (mV)
 	'V_reset' : -70.0, # reset membrane potential after spiking (mV)
 	'V_th'    : -55.0, # spike threshold (mV)
-	'tau_m'   : 10.0   # membrane time constant (ms)
+	'tau_m'   :  10.0  # membrane time constant (ms)
 }
-stim_param = {
-	'rate': 2000.0 # firing rate (Hz)
-}
-freq_num = 4 # number of stimuli frequencies
+stim_rate = 2000.0 # stimulus rate (Hz)
+freq_num = 4 # number of auditory frequencies
 neuron_num = 6 # number of downstream neurons
+sim_time = 500 # duration of simulation (ms)
 
 ###########################################
 ####   CONNECTIONS   ######################
@@ -27,7 +26,8 @@ def setupSim(frequency):
 
 	# Generate stimulus, send identical spike trains to target neurons
 	stim = nest.Create('parrot_neuron')
-	nest.Connect(nest.Create('poisson_generator', params=stim_param),stim)
+	nest.Connect(nest.Create('poisson_generator', params={'rate': stim_rate}),
+		         stim)
 
 	# Create tonotopic map of frequencies
 	tono_map = nest.Create(neuron_mod, freq_num, neuron_param)
@@ -67,7 +67,7 @@ def plotSim(frequency, volt_mtr, spk_det):
 
 for freq in range(freq_num):
 	(volt_mtr, spk_det) = setupSim(freq)
-	nest.Simulate(500)
+	nest.Simulate(sim_time)
 	plotSim(freq, volt_mtr, spk_det)
 
 ###########################################

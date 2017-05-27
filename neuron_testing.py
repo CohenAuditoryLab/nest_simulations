@@ -14,8 +14,8 @@ neuron_param = {
 	'tau_m'   :  10.0  # membrane time constant (ms)
 }
 stim_rate = 2000.0 # stimulus rate (Hz)
-freq_num = 4 # number of auditory frequencies
-neuron_num = 6 # number of downstream neurons
+freq_num = 9 # number of auditory frequencies
+neuron_num = 11 # number of downstream neurons
 sim_time = 500 # duration of simulation (ms)
 
 ###########################################
@@ -53,8 +53,8 @@ def setupSim(frequency):
 
 # Plot membrane potential and spike trains
 def plotSim(frequency, volt_mtr, spk_det):
-	plt.subplot(221+frequency)
-	plt.title("Spike Trains at %s Hz" % (1000*(frequency+1)))
+	plt.subplot(331+frequency)
+	plt.title("Spike Trains at %s Hz" % (1000*(frequency+1)/2))
 	plt.xlabel('time (ms)')
 	plt.ylabel('neuron ID')
 	events = nest.GetStatus(spk_det)[0]['events']
@@ -74,5 +74,6 @@ for freq in range(freq_num):
 ####   SHOW RESULTS   #####################
 ###########################################
 
-plt.subplots_adjust(wspace=0.3, hspace=0.6)
+plt.subplots_adjust(wspace=0.3,hspace=0.6)
+plt.gcf().set_size_inches(12,10,forward=True)
 plt.show()

@@ -53,11 +53,13 @@ def setupSim(frequency):
 
 # Plot membrane potential and spike trains
 def plotSim(frequency, volt_mtr, spk_det):
-	plt.subplot(241+2*frequency)
-	nest.voltage_trace.from_device(volt_mtr)
-	plt.subplot(242+2*frequency)
+	plt.subplot(221+frequency)
+	plt.title("Spike Trains at %s Hz" % (1000*(frequency+1)))
+	plt.xlabel('time (ms)')
+	plt.ylabel('neuron ID')
 	events = nest.GetStatus(spk_det)[0]['events']
-	plt.plot(events['times'],events['senders'], 'o')
+	plt.gca().set_ylim(0, neuron_num-1)
+	plt.plot(events['times'], events['senders']-neuron_num-1, 'o')
 
 ###########################################
 ####   SIMULATION   #######################
@@ -68,4 +70,9 @@ for freq in range(freq_num):
 	nest.Simulate(500)
 	plotSim(freq, volt_mtr, spk_det)
 
+###########################################
+####   SHOW RESULTS   #####################
+###########################################
+
+plt.subplots_adjust(wspace=0.3, hspace=0.6)
 plt.show()

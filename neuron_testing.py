@@ -1,4 +1,5 @@
 import nest
+import numpy as np
 import matplotlib.pyplot as plt
 import nest.voltage_trace
 
@@ -14,45 +15,45 @@ neuron_param = {
 	'tau_m'   :  10.0  # membrane time constant (ms)
 }
 stim_rate = 2000.0 # stimulus rate (Hz)
+stim_weight = 500.0 # strength of connection from stimulus to tonotopic map
 freq_num = 9 # number of auditory frequencies
 neuron_num = 11 # number of downstream neurons
 sim_time = 500 # duration of simulation (ms)
 
+nest.ResetKernel() # reset NEST
+np.random.seed(20) # set seed for reproducability
+
 ###########################################
-####   CONNECTIONS   ######################
+####   NETWORK SETUP   ####################
 ###########################################
-def setupSim(frequency):
-	nest.ResetKernel()
 
-	# Generate stimulus, send identical spike trains to target neurons
-	stim = nest.Create('parrot_neuron')
-	nest.Connect(nest.Create('poisson_generator', params={'rate': stim_rate}),
-		         stim)
+# Generate stimulus and send identical spike trains through parrot neuron
+stim_gen = nest.Create('poisson_generator', params={'rate': stim_rate})
+stim = nest.Create('parrot_neuron')
+nest.Connect(stim_gen, stim)
 
-	# Create tonotopic map of frequencies
-	tono_map = nest.Create(neuron_mod, freq_num, neuron_param)
-	neurons = nest.Create(neuron_mod, neuron_num, neuron_param)
+# Connect stimulus to tonotopic map, all synapses initially deactivated
+tono_map = nest.Create(neuron_mod, freq_num, neuron_param)
+nest.Connect(stim, tono_map, syn_spec={'weight': 0.0})
+conns = nest.GetConnections(stim)
 
-	# Connect tonotopic map to downstream neurons
-	for i in range(len(tono_map)):
-		nest.Connect(tono_map[i:i+1],neurons[i:i+3], 
-			         syn_spec={'weight':1000.0})
+# Connect tonotopic map to downstream neurons
+neurons = nest.Create(neuron_mod, neuron_num, neuron_param)
+for i in range(len(tono_map)):
+	nest.Connect(tono_map[i:i+1],neurons[i:i+3], syn_spec={'weight':1000.0})
 
-	# Create and connect devices
-	volt_mtr = nest.Create('voltmeter')
-	spk_det = nest.Create('spike_detector')
-	nest.Connect(volt_mtr, neurons)
-	nest.Connect(neurons, spk_det)
-	nest.Connect(stim, tono_map[frequency:frequency+1], 
-		         syn_spec={'weight': 500.0})
-	return (volt_mtr, spk_det)
+# Create and connect devices
+volt_mtr = nest.Create('voltmeter')
+spk_det = nest.Create('spike_detector')
+nest.Connect(volt_mtr, neurons)
+nest.Connect(neurons, spk_det)
 
 ###########################################
 ####   PLOTTING   #########################
 ###########################################
 
 # Plot membrane potential and spike trains
-def plotSim(frequency, volt_mtr, spk_det):
+def plotSim(frequency):
 	plt.subplot(331+frequency)
 	plt.title("Spike Trains at %s Hz" % (1000*(frequency+1)/2))
 	plt.xlabel('time (ms)')
@@ -62,13 +63,15 @@ def plotSim(frequency, volt_mtr, spk_det):
 	plt.plot(events['times'], events['senders']-neuron_num-1, 'o')
 
 ###########################################
-####   SIMULATION   #######################
+####   SIMULATIONS   ######################
 ###########################################
 
 for freq in range(freq_num):
-	(volt_mtr, spk_det) = setupSim(freq)
+	nest.ResetNetwork()
+	nest.SetStatus(conns[freq:freq+1],{'weight': stim_weight})
 	nest.Simulate(sim_time)
-	plotSim(freq, volt_mtr, spk_det)
+	nest.SetStatus(conns[freq:freq+1],{'weight': 0.0})
+	plotSim(freq)
 
 ###########################################
 ####   SHOW RESULTS   #####################

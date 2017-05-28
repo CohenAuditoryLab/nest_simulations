@@ -2,6 +2,7 @@ import nest
 import numpy as np
 import matplotlib.pyplot as plt
 import nest.voltage_trace
+from scipy.interpolate import spline
 
 ###########################################
 ####   PARAMETERS   #######################
@@ -19,6 +20,10 @@ stim_weight = 500.0 # strength of connection from stimulus to tonotopic map
 freq_num = 9 # number of auditory frequencies
 neuron_num = 11 # number of downstream neurons
 sim_time = 500.0 # duration of simulation (ms)
+
+# Convert raw integers to corresponding frequencies
+def freq_convert(x):
+	return 1000*(x+1)/2
 
 nest.ResetKernel() # reset NEST
 np.random.seed(20) # set seed for reproducability
@@ -47,16 +52,16 @@ spk_det = nest.Create('spike_detector')
 nest.Connect(neurons, spk_det)
 
 ###########################################
-####   RESULTS   ##########################
+####   GET RESULTS   ######################
 ###########################################
 
 # Store data on firing rates for each frequency simulation
-firing_rates = []
+firing_rates = [[] for i in range(neuron_num)]
 
 # Plot membrane potential and spike trains
 def plot_sim(frequency, events):
 	plt.subplot(331+frequency)
-	plt.title("Spike Trains at %s Hz" % (1000*(frequency+1)/2))
+	plt.title("Spike Trains at %s Hz" % freq_convert(frequency))
 	plt.xlabel('time (ms)')
 	plt.ylabel('neuron ID')
 	plt.gca().set_ylim(0, neuron_num-1)
@@ -67,11 +72,10 @@ def store_firing_rates(frequency, events):
 	for neuron_id in events['senders']:
 		sender_fires[neuron_id-neuron_num-1] += 1
 	for i in range(neuron_num):
-		sender_fires[i] = sender_fires[i]/sim_time
-	firing_rates.append((frequency, sender_fires))
+		firing_rates[i].append(sender_fires[i]/sim_time)
 
 ###########################################
-####   SIMULATIONS   ######################
+####   SIMULATE   #########################
 ###########################################
 
 for freq in range(freq_num):
@@ -90,5 +94,15 @@ for freq in range(freq_num):
 
 plt.subplots_adjust(wspace=0.3,hspace=0.6)
 plt.gcf().set_size_inches(12,10,forward=True)
+plt.figure(2)
+plt.title("Firing Rate v Frequency")
+plt.xlabel('frequency (Hz)')
+plt.ylabel('firing rate (spikes/sec)')
+plt.gca().set_ylim(0,1.75*max([max(i) for i in firing_rates]))
+for i in range(neuron_num):
+	arr = firing_rates[i]
+	x_axis = np.linspace(freq_convert(0),freq_convert(freq_num-1),100)
+	y_axis = spline([freq_convert(j) for j in range(freq_num)],arr,x_axis)
+	plt.plot(x_axis,y_axis, label = 'Neuron %s' % str(i+1))
+plt.legend(loc='upper center', bbox_to_anchor=(0.5, 1.00), ncol=3)
 plt.show()
-print firing_rates

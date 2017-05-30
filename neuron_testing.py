@@ -15,8 +15,9 @@ neuron_param = {
 }
 base_stim_rate = 2500.0 # stimulus rate (Hz)
 tuning_rad = 3.0 # broadness of tuning curve
+tono_rad = 3 # radius of stimulation for tonotopic map
 freq_num = 9 # number of auditory frequencies
-neuron_num = 11 # number of downstream neurons
+neuron_num = 12 # number of downstream neurons
 sim_time = 500.0 # duration of simulation (ms)
 
 # Convert raw integers to corresponding frequencies
@@ -37,8 +38,9 @@ tono_map = nest.Create('poisson_generator',freq_num)
 
 # Connect tonotopic map to downstream neurons
 neurons = nest.Create(neuron_mod, neuron_num, neuron_param)
-nest.Connect(tono_map, neurons, {'rule': 'fixed_outdegree', 'outdegree': 3}, 
-	         {'weight': 100.0})
+for i in range(freq_num):
+	nest.Connect(tono_map[i:i+1],neurons[i:i+tono_rad], 
+		         syn_spec={'weight':1000.0})
 
 # Connect spike detectors
 spk_det = nest.Create('spike_detector')

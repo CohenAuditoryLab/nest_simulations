@@ -7,17 +7,25 @@ import matplotlib.pyplot as plt
 ###########################################
 
 neuron_mod = 'iaf_psc_exp'
+pyr_num = 12 # number of pyramidal neurons
+inh_num = 2 # number of inhibitory interneurons
+neuron_num = pyr_num + inh_num # total number of downstream neurons
+
 neuron_param = {
 	'E_L'     : -70.0, # resting membrane potential (mV)
 	'V_reset' : -70.0, # reset membrane potential after spiking (mV)
 	'V_th'    : -55.0, # spike threshold (mV)
 	'tau_m'   :  10.0  # membrane time constant (ms)
 }
-base_stim_rate = 2500.0 # stimulus rate (Hz)
+tono_weight = 500.0 # weight of stimulus connection to downstream
+pyr_weight = 200.0 # weight of excitatory synapses
+inh_weight = -50.0 # weight of inhibitory synapses
+
+base_stim_rate = 2000.0 # stimulus rate (Hz)
 tuning_rad = 3.0 # broadness of tuning curve
 tono_rad = 3 # radius of stimulation for tonotopic map
+
 freq_num = 9 # number of auditory frequencies
-neuron_num = 12 # number of downstream neurons
 sim_time = 500.0 # duration of simulation (ms)
 
 # Convert raw integers to corresponding frequencies
@@ -37,14 +45,21 @@ nest.ResetKernel() # reset NEST
 tono_map = nest.Create('poisson_generator',freq_num)
 
 # Connect tonotopic map to downstream neurons
-neurons = nest.Create(neuron_mod, neuron_num, neuron_param)
+pyr_neurons = nest.Create(neuron_mod, pyr_num, neuron_param)
 for i in range(freq_num):
-	nest.Connect(tono_map[i:i+1],neurons[i:i+tono_rad], 
-		         syn_spec={'weight':1000.0})
+	nest.Connect(tono_map[i:i+1],pyr_neurons[i:i+tono_rad], 
+		         syn_spec={'weight': tono_weight})
+
+inh_neurons = nest.Create(neuron_mod, inh_num, neuron_param)
+nest.Connect(pyr_neurons, inh_neurons, 
+	         {'rule': 'fixed_indegree', 'indegree': 4} ,
+	         syn_spec={'weight': pyr_weight})
+nest.Connect(inh_neurons, pyr_neurons, syn_spec={'weight': inh_weight})
 
 # Connect spike detectors
 spk_det = nest.Create('spike_detector')
-nest.Connect(neurons, spk_det)
+nest.Connect(pyr_neurons, spk_det)
+nest.Connect(inh_neurons, spk_det)
 
 ###########################################
 ####   SIMULATE   #########################
@@ -73,12 +88,12 @@ for freq in range(freq_num):
 	plt.xlabel('time (ms)')
 	plt.ylabel('neuron ID')
 	plt.gca().set_ylim(1, neuron_num)
-	plt.plot(evs['times'], evs['senders']-neuron_num, 'o')
+	plt.plot(evs['times'], evs['senders']-min(pyr_neurons)+1, 'o')
 
 	# Store data on firing rates
 	sender_fires = [0] * neuron_num
 	for neuron_id in evs['senders']:
-		sender_fires[neuron_id-neuron_num-1] += 1
+		sender_fires[neuron_id-min(pyr_neurons)] += 1
 	for i in range(neuron_num):
 		firing_rates[i].append(1000*sender_fires[i]/sim_time)
 

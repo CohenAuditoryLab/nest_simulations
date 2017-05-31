@@ -12,7 +12,7 @@ start_time = time.time()
 freq_num = 25 # number of auditory frequencies
 sample_size = 20 # number of neurons to record from
 amp_factor = 500 # strength of signal coming from generators
-sim_time = 500.0 # duration of simulation (ms)
+sim_time = 200.0 # duration of simulation (ms)
 grid_size = [10.0,10.0] # side lengths of topological layers (nm)
 
 base_stim_rate = 2000.0 # stimulus rate (Hz)
@@ -72,20 +72,27 @@ inh_conn_param = {
 def freq_convert(x):
 	return 1000*(x+1)/6+334
 
-def clip_print(item,clip_size):
+def clip_print(item,clip_size,clip_fill):
 	curr_size = len(str(item))
 	if curr_size >= clip_size:
 		return item
 	else:
-		return '0' * (clip_size - curr_size) + str(item)
+		return str(clip_fill) * (clip_size - curr_size) + str(item)
 
 # Print to terminal window live updates with simulation information
 def live_update(x):
+	runtime = time.time()-start_time
+	if x == 0:
+		est_wait = '~'
+	else:
+		est_wait = int(freq_num*runtime/x/60)
 	print "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
 	print "XXX   WORKING ON SIMULATION %s of %s   XXX" \
-		% (clip_print(x+1,2), clip_print(freq_num,2))
-	print "XXX       %s MINUTES HAVE PASSED       XXX" \
-		% clip_print(int((time.time()-start_time)/60),2)
+		% (clip_print(x+1,2,'0'), clip_print(freq_num,2,'0'))
+	print "XXX      %s MINUTES HAVE PASSED       XXX" \
+		% clip_print(int(runtime/60),3,' ')
+	print "XXX   %s MINUTES REMAINING (APPROX)   XXX" \
+		% (clip_print(est_wait,3,' '))
 	print "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
 
 # Initialize dictionary of firing rates

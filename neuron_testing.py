@@ -52,9 +52,9 @@ def freq_convert(x):
 def live_update(x):
 	trial_str = '0'
 	if x < 10:
-		trial_str += str(x)
+		trial_str += str(x+1)
 	else:
-		trial_str = str(x)
+		trial_str = str(x+1)
 	print "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
 	print "XXX   WORKING ON SIMULATION %s of %s   XXX" \
 	      % (trial_str,'0'+str(freq_num))
@@ -90,6 +90,7 @@ topp.ConnectLayers(stim_layer, pyr_layer_1, {
 spk_det = nest.Create('spike_detector')
 rec_neurons = np.random.choice(nest.GetNodes(pyr_layer_1)[0],
 	                           size=sample_size, replace=False).tolist()
+rec_neurons.sort()
 nest.Connect(rec_neurons, spk_det)
 
 ###########################################

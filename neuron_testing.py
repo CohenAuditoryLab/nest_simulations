@@ -9,15 +9,14 @@ start_time = time.time()
 ####   PARAMETERS   #######################
 ###########################################
 
-freq_num = 9 # number of auditory frequencies
+freq_num = 25 # number of auditory frequencies
 sample_size = 20 # number of neurons to record from
 amp_factor = 500 # strength of signal coming from generators
 sim_time = 500.0 # duration of simulation (ms)
 grid_size = [10.0,10.0] # side lengths of topological layers (nm)
 
 base_stim_rate = 2000.0 # stimulus rate (Hz)
-tuning_rad = 3 # broadness of tuning curve
-tono_rad = 3 # radius of stimulation for tonotopic map
+tuning_rad = 5 # broadness of tuning curve
 
 neuron_mod = 'iaf_psc_alpha'
 pyr_num = 12 # number of pyramidal neurons
@@ -71,7 +70,7 @@ inh_conn_param = {
 
 # Convert raw integers to corresponding frequencies
 def freq_convert(x):
-	return 1000*(x+1)/2
+	return 1000*(x+1)/6+334
 
 def clip_print(item,clip_size):
 	curr_size = len(str(item))
@@ -89,8 +88,11 @@ def live_update(x):
 		% clip_print(int((time.time()-start_time)/60),2)
 	print "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
 
-# Initialize neuron array of firing rates at each frequency
-firing_rates = [[] for i in range(sample_size)]
+# Initialize dictionary of firing rates
+firing_rates = {
+	'pyr': [[] for i in range(sample_size)],
+	'inh': [[] for i in range(sample_size)]
+}
 
 np.random.seed(10) # set numpy seed for reproducability
 nest.ResetKernel() # reset NEST
@@ -109,12 +111,17 @@ topp.ConnectLayers(stim_layer, pyr_layer_1, pyr_conn_param)
 topp.ConnectLayers(pyr_layer_1, inh_layer, pyr_conn_param)
 topp.ConnectLayers(inh_layer, pyr_layer_1, inh_conn_param)
 
-# Connect spike detectors to random pyr_layer_1 neurons
-spk_det = nest.Create('spike_detector')
-rec_neurons = np.random.choice(nest.GetNodes(pyr_layer_1)[0],
-	                           size=sample_size, replace=False).tolist()
-rec_neurons.sort()
-nest.Connect(rec_neurons, spk_det)
+# Connect spike detectors to random neurons
+spk_pyr = nest.Create('spike_detector')
+spk_inh = nest.Create('spike_detector')
+rec_pyr = np.random.choice(nest.GetNodes(pyr_layer_1)[0],
+	                       size=sample_size, replace=False).tolist()
+rec_inh = np.random.choice(nest.GetNodes(inh_layer)[0],
+	                       size=sample_size, replace=False).tolist()
+rec_pyr.sort()
+rec_inh.sort()
+nest.Connect(rec_pyr, spk_pyr)
+nest.Connect(rec_inh, spk_inh)
 
 ###########################################
 ####   SIMULATE   #########################
@@ -135,22 +142,36 @@ for freq in range(freq_num):
 	
 	# Simulate and record event data from spike detector
 	nest.Simulate(sim_time)
-	evs = nest.GetStatus(spk_det)[0]['events']
 	
-	# Plot spike trains
-	plt.subplot(331+freq)
-	plt.title("Spike Trains at %s Hz" % freq_convert(freq))
-	plt.xlabel('time (ms)')
-	plt.ylabel('neuron ID')
-	plt.gca().set_ylim(1,sample_size)
-	plt.plot(evs['times'],[rec_neurons.index(i)+1 for i in evs['senders']],'o')
+	# Plot and store separate data for pyramidal and inhibitory neurons
+	for i in range(2):
+		if i == 0:
+			evs = evs_pyr = nest.GetStatus(spk_pyr)[0]['events']
+			rec_neurons = rec_pyr
+			fr_index = 'pyr'
+		else:
+			evs = evs_inh = nest.GetStatus(spk_inh)[0]['events']
+			rec_neurons = rec_inh
+			fr_index = 'inh'
+
+		# Plot spike trains
+		if(freq % 3 == 0):
+			plt.figure(i+1)
+			plt.subplot(331+freq/3)
+			plt.title("Spike Trains at %s Hz (%s)" \
+				% (freq_convert(freq),fr_index))
+			plt.xlabel('time (ms)')
+			plt.ylabel('neuron ID')
+			plt.gca().set_ylim(1,sample_size)
+			numbered_rec = [rec_neurons.index(j)+1 for j in evs['senders']]
+			plt.plot(evs['times'], numbered_rec, 'o')
 	
-	# Store data on firing rates
-	sender_fires = [0] * sample_size
-	for neuron_id in evs['senders']:
-		sender_fires[rec_neurons.index(neuron_id)] += 1
-	for i in range(sample_size):
-		firing_rates[i].append(1000*sender_fires[i]/sim_time)
+		# Store data on firing rates
+		sender_fires = [0] * sample_size
+		for neuron_id in evs['senders']:
+			sender_fires[rec_neurons.index(neuron_id)] += 1
+		for j in range(sample_size):
+			firing_rates[fr_index][j].append(1000*sender_fires[j]/sim_time)
 	
 	# Reset rates for stim_layer neurons
 	for row in range(amp_factor):
@@ -163,18 +184,25 @@ for freq in range(freq_num):
 ####   SHOW RESULTS   #####################
 ###########################################
 
-plt.subplots_adjust(wspace=0.3,hspace=0.6)
-plt.gcf().set_size_inches(12,10,forward=True)
-plt.figure(2)
-plt.title("Firing Rate v Frequency")
-plt.xlabel('frequency (Hz)')
-plt.ylabel('firing rate (spikes/sec)')
-plt.gca().set_ylim(0,1.75*max([max(i) for i in firing_rates]))
-for i in range(sample_size):
-	x_axis = [freq_convert(j) for j in range(freq_num)]
-	y_axis = firing_rates[i]
-	plt.plot(x_axis,y_axis, label = 'Neuron %s' % str(i+1))
-plt.legend(loc='upper center', bbox_to_anchor=(0.5, 1.00), ncol=3)
+# Plot separate tuning curve data for pyramidal and inhibitory neurons
+for i in range(2):
+	if i == 0:
+		fr_index = 'pyr'
+	else:
+		fr_index = 'inh'
+	plt.figure(i+3)
+	plt.subplots_adjust(wspace=0.3,hspace=0.6)
+	plt.gcf().set_size_inches(12,10,forward=True)
+	plt.title("Firing Rate v Frequency (%s)" % fr_index)
+	plt.xlabel('frequency (Hz)')
+	plt.ylabel('firing rate (spikes/sec)')
+	plt.gca().set_ylim(0,1.75*max([max(j) for j in firing_rates[fr_index]]))
+	for j in range(sample_size):
+		x_axis = [freq_convert(k) for k in range(freq_num)]
+		y_axis = firing_rates[fr_index][j]
+		plt.plot(x_axis,y_axis, label = 'Neuron %s' % str(j+1))
+	plt.legend(loc='upper center', bbox_to_anchor=(0.5, 1.00), ncol=3)
+
 print "TOTAL SIMULATION RUNTIME: %s MINUTES" \
 	% str(int((time.time()-start_time))/60)
 plt.show()

@@ -2,13 +2,15 @@ import nest
 import nest.topology as topp
 import numpy as np
 import matplotlib.pyplot as plt
+import time
+start_time = time.time()
 
 ###########################################
 ####   PARAMETERS   #######################
 ###########################################
 
 freq_num = 9 # number of auditory frequencies
-sample_size = 10 # number of neurons to record from
+sample_size = 20 # number of neurons to record from
 amp_factor = 500 # strength of signal coming from generators
 sim_time = 500.0 # duration of simulation (ms)
 grid_size = [10.0,10.0] # side lengths of topological layers (nm)
@@ -30,7 +32,7 @@ tono_layer_param = {
 }
 pyr_layer_param = {
 	'extent'   : grid_size, # size of layer (nm^2)
-	'rows'     : 100,       # relative number of neurons per frequency
+	'rows'     : 200,       # relative number of neurons per frequency
 	'columns'  : freq_num,  # one column per frequency
 	'elements' : neuron_mod
 }
@@ -40,30 +42,57 @@ inh_layer_param = {
 	'columns'  : freq_num,  # one column per frequency
 	'elements' : neuron_mod
 }
-
-pyr_weight = 1.0 # weight of excitatory synapses
-inh_weight = -1.0 # weight of inhibitory synapses
+pyr_conn_param = {
+	'connection_type': 'divergent', # connection based on target layer
+	'mask': {'circular': {'radius': grid_size[0]/2}},
+	'kernel': {'gaussian': { # connection probability based on distance
+		'p_center': 1.0,
+		'sigma': 1.0
+	}},
+	'weights': {'gaussian': { # weight of connection based on distance
+		'p_center': 1.0,
+		'sigma': 0.5,
+		'min': 0.0
+	}}
+}
+inh_conn_param = {
+	'connection_type': 'divergent', # connection based on target layer
+	'mask': {'circular': {'radius': grid_size[0]/3}},
+	'kernel': {'gaussian': { # connection probability based on distance
+		'p_center': 1.0,
+		'sigma': 0.5
+	}},
+	'weights': {'gaussian': { # weight of connection based on distance
+		'p_center': -1.0,
+		'sigma': 0.5,
+		'max': 0.0
+	}}
+}
 
 # Convert raw integers to corresponding frequencies
 def freq_convert(x):
 	return 1000*(x+1)/2
 
+def clip_print(item,clip_size):
+	curr_size = len(str(item))
+	if curr_size >= clip_size:
+		return item
+	else:
+		return '0' * (clip_size - curr_size) + str(item)
+
 # Print to terminal window live updates with simulation information
 def live_update(x):
-	trial_str = '0'
-	if x < 10:
-		trial_str += str(x+1)
-	else:
-		trial_str = str(x+1)
 	print "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
 	print "XXX   WORKING ON SIMULATION %s of %s   XXX" \
-	      % (trial_str,'0'+str(freq_num))
+		% (clip_print(x+1,2), clip_print(freq_num,2))
+	print "XXX       %s MINUTES HAVE PASSED       XXX" \
+		% clip_print(int((time.time()-start_time)/60),2)
 	print "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
 
 # Initialize neuron array of firing rates at each frequency
 firing_rates = [[] for i in range(sample_size)]
 
-np.random.seed(20) # set numpy seed for reproducability
+np.random.seed(10) # set numpy seed for reproducability
 nest.ResetKernel() # reset NEST
 
 ###########################################
@@ -74,17 +103,11 @@ nest.ResetKernel() # reset NEST
 stim_layer = topp.CreateLayer(tono_layer_param)
 pyr_layer_1 = topp.CreateLayer(pyr_layer_param)
 inh_layer = topp.CreateLayer(inh_layer_param)
-pyr_layer_2 = topp.CreateLayer(pyr_layer_param)
 
 # Connect layers
-topp.ConnectLayers(stim_layer, pyr_layer_1, {
-	'connection_type': 'divergent',
-	'mask': {'circular': {'radius': 4.0}},
-	'kernel': {'gaussian': {'p_center': 1.0, 'sigma': 0.75}}})
-#topp.ConnectLayers(pyr_layer_1, pyr_layer_2, {'connection_type': 'divergent'})
-#topp.ConnectLayers(pyr_layer_1, inh_layer, {})
-#topp.ConnectLayers(inh_layer, pyr_layer_1, {})
-#topp.ConnectLayers(inh_layer, pyr_layer_2, {})
+topp.ConnectLayers(stim_layer, pyr_layer_1, pyr_conn_param)
+topp.ConnectLayers(pyr_layer_1, inh_layer, pyr_conn_param)
+topp.ConnectLayers(inh_layer, pyr_layer_1, inh_conn_param)
 
 # Connect spike detectors to random pyr_layer_1 neurons
 spk_det = nest.Create('spike_detector')
@@ -152,4 +175,6 @@ for i in range(sample_size):
 	y_axis = firing_rates[i]
 	plt.plot(x_axis,y_axis, label = 'Neuron %s' % str(i+1))
 plt.legend(loc='upper center', bbox_to_anchor=(0.5, 1.00), ncol=3)
+print "TOTAL SIMULATION RUNTIME: %s MINUTES" \
+	% str(int((time.time()-start_time))/60)
 plt.show()

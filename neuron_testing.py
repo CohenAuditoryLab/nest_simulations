@@ -11,7 +11,7 @@ import time
 
 start_time = time.time()
 
-freq_num = 25 # number of auditory frequencies
+freq_num = 5 # number of auditory frequencies
 sample_size = 15 # number of neurons to record from
 amp_factor = 100 # strength of signal coming from generators
 sim_time = 200.0 # duration of simulation (ms)
@@ -123,26 +123,31 @@ nest.SetKernelStatus({'local_num_threads': 4}) # threading for efficiency
 ###########################################
 
 # Create layers
-stim_layer = topp.CreateLayer(stim_layer_param)
-pyr_layer_1 = topp.CreateLayer(pyr_layer_param)
-inh_layer = topp.CreateLayer(inh_layer_param)
+layers = {
+	'stim': topp.CreateLayer(stim_layer_param),
+	'pyr' : topp.CreateLayer(pyr_layer_param),
+	'inh' : topp.CreateLayer(inh_layer_param)
+}
 
 # Connect layers
-topp.ConnectLayers(stim_layer, pyr_layer_1, stim_conn_param)
-topp.ConnectLayers(pyr_layer_1, inh_layer, pyr_conn_param)
-topp.ConnectLayers(inh_layer, pyr_layer_1, inh_conn_param)
+topp.ConnectLayers(layers['stim'], layers['pyr'], stim_conn_param)
+topp.ConnectLayers(layers['pyr'], layers['inh'], pyr_conn_param)
+topp.ConnectLayers(layers['inh'], layers['pyr'], inh_conn_param)
 
-# Connect spike detectors to random neurons
-spk_pyr = nest.Create('spike_detector')
-spk_inh = nest.Create('spike_detector')
-rec_pyr = np.random.choice(nest.GetNodes(pyr_layer_1)[0],
+# Connect spike detectors to random recording neurons
+spk_det = {
+	'pyr': nest.Create('spike_detector'),
+	'inh': nest.Create('spike_detector')
+}
+rec_neurons = {
+	'pyr': np.random.choice(nest.GetNodes(layers['pyr'])[0],
+	                        size=sample_size, replace=False).tolist(),
+	'inh': np.random.choice(nest.GetNodes(layers['inh'])[0],
 	                       size=sample_size, replace=False).tolist()
-rec_inh = np.random.choice(nest.GetNodes(inh_layer)[0],
-	                       size=sample_size, replace=False).tolist()
-rec_pyr.sort()
-rec_inh.sort()
-nest.Connect(rec_pyr, spk_pyr)
-nest.Connect(rec_inh, spk_inh)
+}
+for n in rec_neurons.keys():
+	rec_neurons[n].sort()
+	nest.Connect(rec_neurons[n], spk_det[n])
 
 ###########################################
 ####   SIMULATE   #########################
@@ -160,35 +165,25 @@ for freq in range(freq_num):
 		for col in range(max(0,freq-tuning_rad),
 			             min(freq_num,freq+tuning_rad+1)):
 			rate_factor = max(0.0,(tuning_rad-abs(freq-col))/float(tuning_rad))
-			nest.SetStatus(topp.GetElement(stim_layer,[col,row]),
+			nest.SetStatus(topp.GetElement(layers['stim'],[col,row]),
 				           {'rate': rate_factor*base_stim_rate})
 	
 	# Simulate and record event data from spike detector
 	nest.Simulate(sim_time)
 	
 	# Store separate firing rate data for pyramidal and inhibitory neurons
-	for i in range(2):
-		if i == 0:
-			evs = nest.GetStatus(spk_pyr)[0]['events']['senders']
-			rec_neurons = rec_pyr
-			fr_index = 'pyr'
-		else:
-			evs = nest.GetStatus(spk_inh)[0]['events']['senders']
-			rec_neurons = rec_inh
-			fr_index = 'inh'
-	
-		# Store data on firing rates
+	for n in rec_neurons.keys():
 		sender_fires = [0] * sample_size
-		for neuron_id in evs:
-			sender_fires[rec_neurons.index(neuron_id)] += 1
+		for neuron_id in nest.GetStatus(spk_det[n])[0]['events']['senders']:
+			sender_fires[rec_neurons[n].index(neuron_id)] += 1
 		for j in range(sample_size):
-			firing_rates[fr_index][j].append(1000*sender_fires[j]/sim_time)
+			firing_rates[n][j].append(1000*sender_fires[j]/sim_time)
 	
 	# Reset rates for stim_layer neurons
 	for row in range(amp_factor):
 		for col in range(max(0,freq-tuning_rad),
 			             min(freq_num,freq+tuning_rad+1)):
-			nest.SetStatus(topp.GetElement(stim_layer,[col,row]),
+			nest.SetStatus(topp.GetElement(layers['stim'],[col,row]),
 				           {'rate': 0.0})
 
 ###########################################
@@ -202,24 +197,19 @@ def normalize_frs(frs):
 		normalized.append(fr/max_fr)
 	return normalized
 
-# Normalize firing rates to have peak of 1.0 spikes/sec
-norm_firing_rates = {
-	'pyr': [normalize_frs(frs) for frs in firing_rates['pyr']],
-	'inh': [normalize_frs(frs) for frs in firing_rates['inh']]
-}
-shifted_rates = {
-	'pyr': [[] for i in range(2*freq_num-1)],
-	'inh': [[] for i in range(2*freq_num-1)]
-}
-for n in ['pyr','inh']:
+avg_fr_rates = {}
+for n in firing_rates.keys():
+	norm_fr_rates = [normalize_frs(frs) for frs in firing_rates[n]]
+	shift_fr_rates = [[] for i in range(2*freq_num-1)]
 	for i in range(sample_size):
-		peak = norm_firing_rates[n][i].index(1.0)
+		peak = norm_fr_rates[i].index(1.0)
 		for j in range(freq_num):
-			shifted_rates[n][j+freq_num-peak-1].append(norm_firing_rates[n][i][j])
-avg_rates = {
-	'pyr': [np.mean(i) for i in shifted_rates['pyr']],
-	'inh': [np.mean(i) for i in shifted_rates['inh']]
-}
+			shift_fr_rates[j+freq_num-peak-1].append(norm_fr_rates[i][j])
+	for i in range(sample_size):
+		peak = norm_fr_rates[i].index(1.0)
+		for j in range(freq_num):
+			shift_fr_rates[j+freq_num-peak-1].append(norm_fr_rates[i][j])
+	avg_fr_rates[n] = [np.mean(i) for i in shift_fr_rates]
 
 ###########################################
 ####   GRAPHS   ###########################
@@ -232,7 +222,7 @@ for figure in range(2):
 		fr_dict = firing_rates
 		plt.gca().set_xlim(freq_convert(0),freq_convert(freq_num-1))
 	else:
-		fr_dict = avg_rates
+		fr_dict = avg_fr_rates
 		plt.gca().set_xlim(-1*freq_num+1,freq_num)
 	
 	# Basic plot setup
@@ -246,21 +236,19 @@ for figure in range(2):
 	plt.legend(handles=[pyr_lab,inh_lab])
 	
 	# Plot separate tuning curve data for pyramidal and inhibitory neurons
-	for i in range(2):
-		if i == 0:
-			fr_index = 'pyr'
+	for n in firing_rates.keys():
+		if n == 'pyr':
 			plt_sty = 'b-'
 		else:
-			fr_index = 'inh'
 			plt_sty = 'r-'
 		if figure == 0:
 			for j in range(sample_size):
 				x_axis = [freq_convert(k) for k in range(freq_num)]
-				y_axis = fr_dict[fr_index][j]
+				y_axis = fr_dict[n][j]
 				plt.plot(x_axis, y_axis, plt_sty)
 		else:
 			x_axis = [i for i in range(-1*freq_num+1,freq_num)]
-			y_axis = fr_dict[fr_index]
+			y_axis = fr_dict[n]
 			plt.plot(x_axis, y_axis, plt_sty)
 
 # Final display of runtime

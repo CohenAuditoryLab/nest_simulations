@@ -10,9 +10,9 @@ import time
 
 start_time = time.time()
 
-freq_num = 3 # number of auditory frequencies
-sample_size = 20 # number of neurons to record from
-amp_factor = 800 # strength of signal coming from generators
+freq_num = 25 # number of auditory frequencies
+sample_size = 15 # number of neurons to record from
+amp_factor = 100 # strength of signal coming from generators
 sim_time = 200.0 # duration of simulation (ms)
 grid_size = [5.0,5.0] # side lengths of topological layers (nm)
 
@@ -41,13 +41,13 @@ inh_layer_param = {
 }
 stim_conn_param = {
 	'connection_type': 'divergent', # connection based on target layer
-	'mask': {'circular': {'radius': grid_size[0]/2}},
+	'mask': {'circular': {'radius': grid_size[0]/4}},
 	'kernel': {'gaussian': { # connection probability based on distance
 		'p_center': 1.0,
-		'sigma': 1.0
+		'sigma': 0.5
 	}},
 	'weights': {'gaussian': { # weight of connection based on distance
-		'p_center': 1.5,
+		'p_center': 10.0,
 		'sigma': 1.0,
 		'min': 0.0
 	}}
@@ -67,13 +67,13 @@ pyr_conn_param = {
 }
 inh_conn_param = {
 	'connection_type': 'divergent', # connection based on target layer
-	'mask': {'circular': {'radius': grid_size[0]/2}},
+	'mask': {'circular': {'radius': grid_size[0]/4}},
 	'kernel': {'gaussian': { # connection probability based on distance
 		'p_center': 1.0,
 		'sigma': 1.0
 	}},
 	'weights': {'gaussian': { # weight of connection based on distance
-		'p_center': -1.0,
+		'p_center': -1.5,
 		'sigma': 1.0,
 		'max': 0.0
 	}}
@@ -92,16 +92,17 @@ def clip_print(item,clip_size,clip_fill):
 
 # Print to terminal window live updates with simulation information
 def live_update(x):
-	runtime = time.time()-start_time
+	tot_runtime = time.time()-start_time
+	sim_runtime = time.time()-sim_start_time
 	if x == 0:
 		est_wait = '~'
 	else:
-		est_wait = int((freq_num*runtime/x-runtime)/60+0.5)
+		est_wait = int((freq_num*sim_runtime/x-sim_runtime)/60+0.5)
 	print "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
 	print "XXX   WORKING ON SIMULATION %s of %s   XXX" \
 		% (clip_print(x+1,2,'0'), clip_print(freq_num,2,'0'))
 	print "XXX      %s MINUTES HAVE PASSED       XXX" \
-		% clip_print(int(runtime/60),3,' ')
+		% clip_print(int(tot_runtime/60),3,' ')
 	print "XXX   %s MINUTES REMAINING (APPROX)   XXX" \
 		% (clip_print(est_wait,3,' '))
 	print "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
@@ -146,6 +147,8 @@ nest.Connect(rec_inh, spk_inh)
 ####   SIMULATE   #########################
 ###########################################
 
+sim_start_time = time.time()
+
 for freq in range(freq_num):
 	nest.ResetNetwork()
 	nest.SetKernelStatus({'time': 0.0})
@@ -162,32 +165,20 @@ for freq in range(freq_num):
 	# Simulate and record event data from spike detector
 	nest.Simulate(sim_time)
 	
-	# Plot and store separate data for pyramidal and inhibitory neurons
+	# Store separate firing rate data for pyramidal and inhibitory neurons
 	for i in range(2):
 		if i == 0:
-			evs = evs_pyr = nest.GetStatus(spk_pyr)[0]['events']
+			evs = nest.GetStatus(spk_pyr)[0]['events']['senders']
 			rec_neurons = rec_pyr
 			fr_index = 'pyr'
 		else:
-			evs = evs_inh = nest.GetStatus(spk_inh)[0]['events']
+			evs = nest.GetStatus(spk_inh)[0]['events']['senders']
 			rec_neurons = rec_inh
 			fr_index = 'inh'
-
-		# Plot spike trains
-		if(freq % 3 == 0):
-			plt.figure(i+1)
-			plt.subplot(331+freq/3)
-			plt.title("Spike Trains at %s Hz (%s)" \
-				% (freq_convert(freq),fr_index))
-			plt.xlabel('time (ms)')
-			plt.ylabel('neuron ID')
-			plt.gca().set_ylim(1,sample_size)
-			numbered_rec = [rec_neurons.index(j)+1 for j in evs['senders']]
-			plt.plot(evs['times'], numbered_rec, 'o')
 	
 		# Store data on firing rates
 		sender_fires = [0] * sample_size
-		for neuron_id in evs['senders']:
+		for neuron_id in evs:
 			sender_fires[rec_neurons.index(neuron_id)] += 1
 		for j in range(sample_size):
 			firing_rates[fr_index][j].append(1000*sender_fires[j]/sim_time)
@@ -209,7 +200,7 @@ for i in range(2):
 		fr_index = 'pyr'
 	else:
 		fr_index = 'inh'
-	plt.figure(i+3)
+	plt.figure(i+1)
 	plt.subplots_adjust(wspace=0.3,hspace=0.6)
 	plt.gcf().set_size_inches(12,10,forward=True)
 	plt.title("Firing Rate v Frequency (%s)" % fr_index)

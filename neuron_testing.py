@@ -11,7 +11,7 @@ import time
 
 start_time = time.time()
 
-freq_num = 5 # number of auditory frequencies
+freq_num = 25 # number of auditory frequencies
 sample_size = 15 # number of neurons to record from
 amp_factor = 100 # strength of signal coming from generators
 sim_time = 200.0 # duration of simulation (ms)
@@ -80,10 +80,19 @@ inh_conn_param = {
 	}}
 }
 
+np.random.seed(10) # set numpy seed for reproducability
+nest.ResetKernel() # reset NEST
+nest.SetKernelStatus({'local_num_threads': 4}) # threading for efficiency
+
+###########################################
+####   DISPLAY FUNCTIONS   ################
+###########################################
+
 # Convert raw integers to corresponding frequencies
 def freq_convert(x):
 	return 1000*(x+1)/6+334
 
+# Resize variables for printing to terminal window
 def clip_print(item,clip_size,clip_fill):
 	curr_size = len(str(item))
 	if curr_size >= clip_size:
@@ -107,16 +116,6 @@ def live_update(x):
 	print "XXX   %s MINUTES REMAINING (APPROX)   XXX" \
 		% (clip_print(est_wait,3,' '))
 	print "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
-
-# Initialize dictionary of firing rates
-firing_rates = {
-	'pyr': [[] for i in range(sample_size)],
-	'inh': [[] for i in range(sample_size)]
-}
-
-np.random.seed(10) # set numpy seed for reproducability
-nest.ResetKernel() # reset NEST
-nest.SetKernelStatus({'local_num_threads': 4}) # threading for efficiency
 
 ###########################################
 ####   NETWORK SETUP   ####################
@@ -150,8 +149,14 @@ for n in rec_neurons.keys():
 	nest.Connect(rec_neurons[n], spk_det[n])
 
 ###########################################
-####   SIMULATE   #########################
+####   SIMULATION   #######################
 ###########################################
+
+# Initialize dictionary of firing rates
+firing_rates = {
+	'pyr': [[] for i in range(sample_size)],
+	'inh': [[] for i in range(sample_size)]
+}
 
 sim_start_time = time.time()
 
@@ -168,10 +173,10 @@ for freq in range(freq_num):
 			nest.SetStatus(topp.GetElement(layers['stim'],[col,row]),
 				           {'rate': rate_factor*base_stim_rate})
 	
-	# Simulate and record event data from spike detector
+	# Simulate and record event data from spike detectors
 	nest.Simulate(sim_time)
 	
-	# Store separate firing rate data for pyramidal and inhibitory neurons
+	# Store firing rate data for each set of neurons
 	for n in rec_neurons.keys():
 		sender_fires = [0] * sample_size
 		for neuron_id in nest.GetStatus(spk_det[n])[0]['events']['senders']:
@@ -187,28 +192,30 @@ for freq in range(freq_num):
 				           {'rate': 0.0})
 
 ###########################################
-####   RESULTS   ##########################
+####   CALCULATIONS   #####################
 ###########################################
 
-def normalize_frs(frs):
-	normalized = []
-	max_fr = max(frs)
-	for fr in frs:
-		normalized.append(fr/max_fr)
-	return normalized
-
+# Normalize and average firing rates for each set of neurons
 avg_fr_rates = {}
 for n in firing_rates.keys():
-	norm_fr_rates = [normalize_frs(frs) for frs in firing_rates[n]]
+
+	# Normalize firing rates between 0.0 and 1.0
+	norm_fr_rates = []
+	for frs in firing_rates[n]:
+		normalized = []
+		max_fr = max(frs)
+		for fr in frs:
+			normalized.append(fr/max_fr)
+		norm_fr_rates.append(normalized)
+	
+	# Shift firing rate data to be centered
 	shift_fr_rates = [[] for i in range(2*freq_num-1)]
 	for i in range(sample_size):
 		peak = norm_fr_rates[i].index(1.0)
 		for j in range(freq_num):
 			shift_fr_rates[j+freq_num-peak-1].append(norm_fr_rates[i][j])
-	for i in range(sample_size):
-		peak = norm_fr_rates[i].index(1.0)
-		for j in range(freq_num):
-			shift_fr_rates[j+freq_num-peak-1].append(norm_fr_rates[i][j])
+	
+	# Create a single averaged list of firing rates for each set of neurons
 	avg_fr_rates[n] = [np.mean(i) for i in shift_fr_rates]
 
 ###########################################
@@ -216,12 +223,12 @@ for n in firing_rates.keys():
 ###########################################
 
 for figure in range(2):
-	# Raw data and normalized data graphed
 	plt.figure(figure)
-	if figure == 0:
+	
+	if figure == 0: # graph of all recorded firing rates
 		fr_dict = firing_rates
 		plt.gca().set_xlim(freq_convert(0),freq_convert(freq_num-1))
-	else:
+	else: # normalized graph of firing rates for each set of neurons
 		fr_dict = avg_fr_rates
 		plt.gca().set_xlim(-1*freq_num+1,freq_num)
 	

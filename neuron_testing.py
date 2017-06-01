@@ -9,21 +9,18 @@ start_time = time.time()
 ####   PARAMETERS   #######################
 ###########################################
 
-freq_num = 25 # number of auditory frequencies
+freq_num = 3 # number of auditory frequencies
 sample_size = 20 # number of neurons to record from
-amp_factor = 500 # strength of signal coming from generators
+amp_factor = 800 # strength of signal coming from generators
 sim_time = 200.0 # duration of simulation (ms)
-grid_size = [10.0,10.0] # side lengths of topological layers (nm)
+grid_size = [5.0,5.0] # side lengths of topological layers (nm)
 
 base_stim_rate = 2000.0 # stimulus rate (Hz)
 tuning_rad = 5 # broadness of tuning curve
 
 neuron_mod = 'iaf_psc_alpha'
-pyr_num = 12 # number of pyramidal neurons
-inh_num = 2 # number of inhibitory interneurons
-neuron_num = pyr_num + inh_num # total number of downstream neurons
 
-tono_layer_param = {
+stim_layer_param = {
 	'extent'   : grid_size,  # size of layer (nm^2)
 	'rows'     : amp_factor, # strength of signal amplification
 	'columns'  : freq_num,   # one column per frequency
@@ -31,17 +28,17 @@ tono_layer_param = {
 }
 pyr_layer_param = {
 	'extent'   : grid_size, # size of layer (nm^2)
-	'rows'     : 200,       # relative number of neurons per frequency
+	'rows'     : 500,       # relative number of neurons per frequency
 	'columns'  : freq_num,  # one column per frequency
 	'elements' : neuron_mod
 }
 inh_layer_param = {
 	'extent'   : grid_size, # size of layer (nm^2)
-	'rows'     : 10,        # relative number of neurons per frequency
+	'rows'     : 50,        # relative number of neurons per frequency
 	'columns'  : freq_num,  # one column per frequency
 	'elements' : neuron_mod
 }
-pyr_conn_param = {
+stim_conn_param = {
 	'connection_type': 'divergent', # connection based on target layer
 	'mask': {'circular': {'radius': grid_size[0]/2}},
 	'kernel': {'gaussian': { # connection probability based on distance
@@ -49,21 +46,34 @@ pyr_conn_param = {
 		'sigma': 1.0
 	}},
 	'weights': {'gaussian': { # weight of connection based on distance
+		'p_center': 1.5,
+		'sigma': 1.0,
+		'min': 0.0
+	}}
+}
+pyr_conn_param = {
+	'connection_type': 'divergent', # connection based on target layer
+	'mask': {'circular': {'radius': grid_size[0]/2}},
+	'kernel': {'gaussian': { # connection probability based on distance
 		'p_center': 1.0,
-		'sigma': 0.5,
+		'sigma': 2.0
+	}},
+	'weights': {'gaussian': { # weight of connection based on distance
+		'p_center': 1.5,
+		'sigma': 1.0,
 		'min': 0.0
 	}}
 }
 inh_conn_param = {
 	'connection_type': 'divergent', # connection based on target layer
-	'mask': {'circular': {'radius': grid_size[0]/3}},
+	'mask': {'circular': {'radius': grid_size[0]/2}},
 	'kernel': {'gaussian': { # connection probability based on distance
 		'p_center': 1.0,
-		'sigma': 0.5
+		'sigma': 1.0
 	}},
 	'weights': {'gaussian': { # weight of connection based on distance
 		'p_center': -1.0,
-		'sigma': 0.5,
+		'sigma': 1.0,
 		'max': 0.0
 	}}
 }
@@ -85,7 +95,7 @@ def live_update(x):
 	if x == 0:
 		est_wait = '~'
 	else:
-		est_wait = int(freq_num*runtime/x/60)
+		est_wait = int((freq_num*runtime/x-runtime)/60+0.5)
 	print "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
 	print "XXX   WORKING ON SIMULATION %s of %s   XXX" \
 		% (clip_print(x+1,2,'0'), clip_print(freq_num,2,'0'))
@@ -109,12 +119,12 @@ nest.ResetKernel() # reset NEST
 ###########################################
 
 # Create layers
-stim_layer = topp.CreateLayer(tono_layer_param)
+stim_layer = topp.CreateLayer(stim_layer_param)
 pyr_layer_1 = topp.CreateLayer(pyr_layer_param)
 inh_layer = topp.CreateLayer(inh_layer_param)
 
 # Connect layers
-topp.ConnectLayers(stim_layer, pyr_layer_1, pyr_conn_param)
+topp.ConnectLayers(stim_layer, pyr_layer_1, stim_conn_param)
 topp.ConnectLayers(pyr_layer_1, inh_layer, pyr_conn_param)
 topp.ConnectLayers(inh_layer, pyr_layer_1, inh_conn_param)
 

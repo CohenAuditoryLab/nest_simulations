@@ -3,11 +3,12 @@ import nest.topology as topp
 import numpy as np
 import matplotlib.pyplot as plt
 import time
-start_time = time.time()
 
 ###########################################
 ####   PARAMETERS   #######################
 ###########################################
+
+start_time = time.time()
 
 freq_num = 3 # number of auditory frequencies
 sample_size = 20 # number of neurons to record from
@@ -113,6 +114,7 @@ firing_rates = {
 
 np.random.seed(10) # set numpy seed for reproducability
 nest.ResetKernel() # reset NEST
+nest.SetKernelStatus({'local_num_threads': 4}) # threading for efficiency
 
 ###########################################
 ####   NETWORK SETUP   ####################

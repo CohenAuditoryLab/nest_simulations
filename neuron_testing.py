@@ -2,6 +2,7 @@ import nest
 import nest.topology as topp
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.lines as mlines
 import time
 
 ###########################################
@@ -10,7 +11,7 @@ import time
 
 start_time = time.time()
 
-freq_num = 25 # number of auditory frequencies
+freq_num = 5 # number of auditory frequencies
 sample_size = 15 # number of neurons to record from
 amp_factor = 100 # strength of signal coming from generators
 sim_time = 200.0 # duration of simulation (ms)
@@ -194,25 +195,31 @@ for freq in range(freq_num):
 ####   SHOW RESULTS   #####################
 ###########################################
 
+# Setup firing rate plot display
+plt.subplots_adjust(wspace=0.3,hspace=0.6)
+plt.gcf().set_size_inches(12,10,forward=True)
+plt.title("Firing Rate v Frequency")
+plt.xlabel('frequency (Hz)')
+plt.ylabel('firing rate (spikes/sec)')
+plt.gca().set_xlim(freq_convert(0),freq_convert(freq_num-1))
+pyr_lab = mlines.Line2D([],[],color='blue',label='pyramidal')
+inh_lab = mlines.Line2D([],[],color='red',label='inhibitory')
+plt.legend(handles=[pyr_lab,inh_lab])
+
 # Plot separate tuning curve data for pyramidal and inhibitory neurons
 for i in range(2):
 	if i == 0:
 		fr_index = 'pyr'
+		plt_sty = 'b-'
 	else:
 		fr_index = 'inh'
-	plt.figure(i+1)
-	plt.subplots_adjust(wspace=0.3,hspace=0.6)
-	plt.gcf().set_size_inches(12,10,forward=True)
-	plt.title("Firing Rate v Frequency (%s)" % fr_index)
-	plt.xlabel('frequency (Hz)')
-	plt.ylabel('firing rate (spikes/sec)')
-	plt.gca().set_ylim(0,1.75*max([max(j) for j in firing_rates[fr_index]]))
+		plt_sty = 'r-'
 	for j in range(sample_size):
 		x_axis = [freq_convert(k) for k in range(freq_num)]
 		y_axis = firing_rates[fr_index][j]
-		plt.plot(x_axis,y_axis, label = 'Neuron %s' % str(j+1))
-	plt.legend(loc='upper center', bbox_to_anchor=(0.5, 1.00), ncol=3)
+		plt.plot(x_axis,y_axis, plt_sty)
 
+# Final display of runtime
 print "TOTAL SIMULATION RUNTIME: %s MINUTES" \
 	% str(int((time.time()-start_time))/60)
 plt.show()

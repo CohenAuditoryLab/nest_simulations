@@ -11,7 +11,7 @@ import time
 
 start_time = time.time()
 
-freq_num = 5 # number of auditory frequencies
+freq_num = 25 # number of auditory frequencies
 sample_size = 15 # number of neurons to record from
 amp_factor = 100 # strength of signal coming from generators
 sim_time = 200.0 # duration of simulation (ms)
@@ -192,32 +192,76 @@ for freq in range(freq_num):
 				           {'rate': 0.0})
 
 ###########################################
-####   SHOW RESULTS   #####################
+####   RESULTS   ##########################
 ###########################################
 
-# Setup firing rate plot display
-plt.subplots_adjust(wspace=0.3,hspace=0.6)
-plt.gcf().set_size_inches(12,10,forward=True)
-plt.title("Firing Rate v Frequency")
-plt.xlabel('frequency (Hz)')
-plt.ylabel('firing rate (spikes/sec)')
-plt.gca().set_xlim(freq_convert(0),freq_convert(freq_num-1))
-pyr_lab = mlines.Line2D([],[],color='blue',label='pyramidal')
-inh_lab = mlines.Line2D([],[],color='red',label='inhibitory')
-plt.legend(handles=[pyr_lab,inh_lab])
+def normalize_frs(frs):
+	normalized = []
+	max_fr = max(frs)
+	for fr in frs:
+		normalized.append(fr/max_fr)
+	return normalized
 
-# Plot separate tuning curve data for pyramidal and inhibitory neurons
-for i in range(2):
-	if i == 0:
-		fr_index = 'pyr'
-		plt_sty = 'b-'
+# Normalize firing rates to have peak of 1.0 spikes/sec
+norm_firing_rates = {
+	'pyr': [normalize_frs(frs) for frs in firing_rates['pyr']],
+	'inh': [normalize_frs(frs) for frs in firing_rates['inh']]
+}
+shifted_rates = {
+	'pyr': [[] for i in range(2*freq_num-1)],
+	'inh': [[] for i in range(2*freq_num-1)]
+}
+for n in ['pyr','inh']:
+	for i in range(sample_size):
+		peak = norm_firing_rates[n][i].index(1.0)
+		for j in range(freq_num):
+			shifted_rates[n][j+freq_num-peak-1].append(norm_firing_rates[n][i][j])
+avg_rates = {
+	'pyr': [np.mean(i) for i in shifted_rates['pyr']],
+	'inh': [np.mean(i) for i in shifted_rates['inh']]
+}
+
+###########################################
+####   GRAPHS   ###########################
+###########################################
+
+for figure in range(2):
+	# Raw data and normalized data graphed
+	plt.figure(figure)
+	if figure == 0:
+		fr_dict = firing_rates
+		plt.gca().set_xlim(freq_convert(0),freq_convert(freq_num-1))
 	else:
-		fr_index = 'inh'
-		plt_sty = 'r-'
-	for j in range(sample_size):
-		x_axis = [freq_convert(k) for k in range(freq_num)]
-		y_axis = firing_rates[fr_index][j]
-		plt.plot(x_axis,y_axis, plt_sty)
+		fr_dict = avg_rates
+		plt.gca().set_xlim(-1*freq_num+1,freq_num)
+	
+	# Basic plot setup
+	plt.subplots_adjust(wspace=0.3,hspace=0.6)
+	plt.gcf().set_size_inches(12,10,forward=True)
+	plt.title("Firing Rate v Frequency")
+	plt.xlabel('frequency (Hz)')
+	plt.ylabel('firing rate (spikes/sec)')
+	pyr_lab = mlines.Line2D([],[],color='blue',label='pyramidal')
+	inh_lab = mlines.Line2D([],[],color='red',label='inhibitory')
+	plt.legend(handles=[pyr_lab,inh_lab])
+	
+	# Plot separate tuning curve data for pyramidal and inhibitory neurons
+	for i in range(2):
+		if i == 0:
+			fr_index = 'pyr'
+			plt_sty = 'b-'
+		else:
+			fr_index = 'inh'
+			plt_sty = 'r-'
+		if figure == 0:
+			for j in range(sample_size):
+				x_axis = [freq_convert(k) for k in range(freq_num)]
+				y_axis = fr_dict[fr_index][j]
+				plt.plot(x_axis, y_axis, plt_sty)
+		else:
+			x_axis = [i for i in range(-1*freq_num+1,freq_num)]
+			y_axis = fr_dict[fr_index]
+			plt.plot(x_axis, y_axis, plt_sty)
 
 # Final display of runtime
 print "TOTAL SIMULATION RUNTIME: %s MINUTES" \

@@ -12,7 +12,7 @@ import time
 start_time = time.time()
 
 freq_num = 25 # number of auditory frequencies
-sample_size = 15 # number of neurons to record from
+sample_size = 20 # number of neurons to record from
 amp_factor = 100 # strength of signal coming from generators
 sim_time = 200.0 # duration of simulation (ms)
 grid_size = [5.0,5.0] # side lengths of topological layers (nm)
@@ -36,7 +36,7 @@ pyr_layer_param = {
 }
 inh_layer_param = {
 	'extent'   : grid_size, # size of layer (nm^2)
-	'rows'     : 50,        # relative number of neurons per frequency
+	'rows'     : 100,        # relative number of neurons per frequency
 	'columns'  : freq_num,  # one column per frequency
 	'elements' : neuron_mod
 }
@@ -45,7 +45,7 @@ stim_conn_param = {
 	'mask': {'circular': {'radius': grid_size[0]/4}},
 	'kernel': {'gaussian': { # connection probability based on distance
 		'p_center': 1.0,
-		'sigma': 0.5
+		'sigma': 1.0
 	}},
 	'weights': {'gaussian': { # weight of connection based on distance
 		'p_center': 10.0,
@@ -55,20 +55,20 @@ stim_conn_param = {
 }
 pyr_conn_param = {
 	'connection_type': 'divergent', # connection based on target layer
-	'mask': {'circular': {'radius': grid_size[0]/2}},
+	'mask': {'circular': {'radius': grid_size[0]/4}},
 	'kernel': {'gaussian': { # connection probability based on distance
 		'p_center': 1.0,
-		'sigma': 2.0
+		'sigma': 0.1
 	}},
 	'weights': {'gaussian': { # weight of connection based on distance
 		'p_center': 1.5,
-		'sigma': 1.0,
+		'sigma': 0.5,
 		'min': 0.0
 	}}
 }
 inh_conn_param = {
 	'connection_type': 'divergent', # connection based on target layer
-	'mask': {'circular': {'radius': grid_size[0]/4}},
+	'mask': {'circular': {'radius': grid_size[0]/2}},
 	'kernel': {'gaussian': { # connection probability based on distance
 		'p_center': 1.0,
 		'sigma': 1.0
@@ -223,7 +223,7 @@ for n in firing_rates.keys():
 ###########################################
 
 for figure in range(2):
-	plt.figure(figure)
+	plt.figure(figure+1)
 	
 	if figure == 0: # graph of all recorded firing rates
 		fr_dict = firing_rates

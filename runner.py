@@ -1,7 +1,8 @@
 import neuron_testing as test
 
+# Setup base parameters for simulations
 args = {
-	'freq_num': 5,
+	'freq_num': 25,
 	'sample_size': 20,
 	'amp_factor': 100,
 	'sim_time': 200.0,
@@ -23,9 +24,9 @@ args = {
 
 	'pyr_conn_rad': 0.25,
 	'pyr_conn_p_center': 1.0,
-	'pyr_conn_p_sigma': 0.1,
+	'pyr_conn_p_sigma': 2.0,
 	'pyr_conn_weight_center': 1.5,
-	'pyr_conn_weight_sigma': 0.5,
+	'pyr_conn_weight_sigma': 1.0,
 
 	'inh_conn_rad': 0.5,
 	'inh_conn_p_center': 1.0,
@@ -36,4 +37,7 @@ args = {
 	'seed': 10
 }
 
-test.main(args)
+# Run variable simulations
+for i in range(5):
+	args['tun_rad'] = i+1
+	test.main(args)

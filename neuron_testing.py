@@ -11,7 +11,7 @@ import time
 
 start_time = time.time()
 
-freq_num = 5 # number of auditory frequencies
+freq_num = 25 # number of auditory frequencies
 sample_size = 20 # number of neurons to record from
 amp_factor = 100 # strength of signal coming from generators
 sim_time = 200.0 # duration of simulation (ms)

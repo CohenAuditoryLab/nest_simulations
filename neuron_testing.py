@@ -11,7 +11,7 @@ import time
 
 start_time = time.time()
 
-freq_num = 25 # number of auditory frequencies
+freq_num = 5 # number of auditory frequencies
 sample_size = 20 # number of neurons to record from
 amp_factor = 100 # strength of signal coming from generators
 sim_time = 200.0 # duration of simulation (ms)
@@ -58,11 +58,11 @@ pyr_conn_param = {
 	'mask': {'circular': {'radius': grid_size[0]/4}},
 	'kernel': {'gaussian': { # connection probability based on distance
 		'p_center': 1.0,
-		'sigma': 0.1
+		'sigma': 2.0
 	}},
 	'weights': {'gaussian': { # weight of connection based on distance
 		'p_center': 1.5,
-		'sigma': 0.5,
+		'sigma': 1.0,
 		'min': 0.0
 	}}
 }

@@ -1,8 +1,16 @@
 import neuron_testing as test
+import matplotlib.pyplot as plt
+import matplotlib.lines as mlines
+from scipy.interpolate import spline
+import numpy as np
 
-# Setup base parameters for simulations
+###########################################
+####   PARAMETERS   #######################
+###########################################
+
+# Reference external function for 
 args = {
-	'freq_num': 25,
+	'freq_num': 5,
 	'sample_size': 20,
 	'amp_factor': 100,
 	'sim_time': 200.0,
@@ -37,7 +45,53 @@ args = {
 	'seed': 10
 }
 
-# Run variable simulations
-for i in range(5):
-	args['tun_rad'] = i+1
-	test.main(args)
+# Specify independent variable and test range
+variable = 'tun_rad'
+test_range = [i+1 for i in range(5)]
+
+###########################################
+####   SIMULATION   #######################
+###########################################
+
+firing_rates = []
+for i in test_range:
+	args[variable] = i
+	firing_rates.append(test.main(args))
+
+###########################################
+####   CALCULATIONS   #####################
+###########################################
+
+# Calculate tuning curve widths
+tun_curve_w = [{} for i in test_range]
+for i in range(len(firing_rates)):
+	for n in firing_rates[i].keys():
+		tuning_widths = [len(j)-j.count(0.0) for j in firing_rates[i][n]]
+		tun_curve_w[i][n] = np.mean(tuning_widths)
+
+###########################################
+####   GRAPHS   ###########################
+###########################################
+
+# Basic plot setup
+plt.title("Tuning Curve Width v %s" % variable)
+plt.xlabel(variable)
+plt.ylabel('tuning curve width')
+pyr_lab = mlines.Line2D([],[],color='blue',label='pyramidal')
+inh_lab = mlines.Line2D([],[],color='red',label='inhibitory')
+plt.legend(handles=[pyr_lab,inh_lab])
+
+# Plot separate tuning curve data for pyramidal and inhibitory neurons
+for n in firing_rates[0].keys():
+	if n == 'pyr':
+		plt_sty = 'b-'
+	else:
+		plt_sty = 'r-'
+	x_axis = np.linspace(min(test_range), max(test_range), 100)
+	y_axis = spline(test_range, [dic[n] for dic in tun_curve_w], x_axis)
+	plt.plot(x_axis, y_axis, plt_sty)
+
+# Final display of runtime
+#print "TOTAL SIMULATION RUNTIME: %s MINUTES" \
+#	% str(int((time.time()-start_time))/60)
+plt.show()

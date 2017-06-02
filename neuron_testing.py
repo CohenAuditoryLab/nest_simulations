@@ -91,10 +91,6 @@ def main(args):
 	####   DISPLAY FUNCTIONS   ################
 	###########################################
 
-	# Convert raw integers to corresponding frequencies
-	def freq_convert(x):
-		return 1000*(x+1)/6+334
-
 	# Resize variables for printing to terminal window
 	def clip_print(item,clip_size,clip_fill):
 		curr_size = len(str(item))
@@ -194,74 +190,4 @@ def main(args):
 				nest.SetStatus(topp.GetElement(layers['stim'],[col,row]),
 					           {'rate': 0.0})
 
-	###########################################
-	####   CALCULATIONS   #####################
-	###########################################
-
-	# Normalize and average firing rates for each set of neurons
-	avg_fr_rates = {}
-	for n in firing_rates.keys():
-
-		# Normalize firing rates between 0.0 and 1.0
-		norm_fr_rates = []
-		for frs in firing_rates[n]:
-			normalized = []
-			max_fr = max(0.001,max(frs))
-			for fr in frs:
-				normalized.append(fr/max_fr)
-			norm_fr_rates.append(normalized)
-		
-		# Shift firing rate data to be centered
-		shift_fr_rates = [[] for i in range(2*freq_num-1)]
-		for i in range(sample_size):
-			peak = norm_fr_rates[i].index(max(norm_fr_rates[i]))
-			for j in range(freq_num):
-				shift_fr_rates[j+freq_num-peak-1].append(norm_fr_rates[i][j])
-		
-		# Create a single averaged list of firing rates for each set of neurons
-		avg_fr_rates[n] = [np.mean(i) for i in shift_fr_rates]
-
-	###########################################
-	####   GRAPHS   ###########################
-	###########################################
-
-	for figure in range(2):
-		plt.figure(figure+1)
-		
-		if figure == 0: # graph of all recorded firing rates
-			fr_dict = firing_rates
-			plt.gca().set_xlim(freq_convert(0),freq_convert(freq_num-1))
-		else: # normalized graph of firing rates for each set of neurons
-			fr_dict = avg_fr_rates
-			plt.gca().set_xlim(-1*freq_num+1,freq_num)
-		
-		# Basic plot setup
-		plt.subplots_adjust(wspace=0.3,hspace=0.6)
-		plt.gcf().set_size_inches(12,10,forward=True)
-		plt.title("Firing Rate v Frequency")
-		plt.xlabel('frequency (Hz)')
-		plt.ylabel('firing rate (spikes/sec)')
-		pyr_lab = mlines.Line2D([],[],color='blue',label='pyramidal')
-		inh_lab = mlines.Line2D([],[],color='red',label='inhibitory')
-		plt.legend(handles=[pyr_lab,inh_lab])
-		
-		# Plot separate tuning curve data for pyramidal and inhibitory neurons
-		for n in firing_rates.keys():
-			if n == 'pyr':
-				plt_sty = 'b-'
-			else:
-				plt_sty = 'r-'
-			if figure == 0:
-				for j in range(sample_size):
-					x_axis = [freq_convert(k) for k in range(freq_num)]
-					y_axis = fr_dict[n][j]
-					plt.plot(x_axis, y_axis, plt_sty)
-			else:
-				x_axis = [i for i in range(-1*freq_num+1,freq_num)]
-				y_axis = fr_dict[n]
-				plt.plot(x_axis, y_axis, plt_sty)
-
-	# Final display of runtime
-	print "TOTAL SIMULATION RUNTIME: %s MINUTES" \
-		% str(int((time.time()-start_time))/60)
-	plt.show()
+	return firing_rates

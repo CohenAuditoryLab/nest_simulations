@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import matplotlib.lines as mlines
 from scipy.interpolate import spline
 import numpy as np
+import runtime
 
 ###########################################
 ####   PARAMETERS   #######################
@@ -54,9 +55,11 @@ test_range = [i+1 for i in range(5)]
 ###########################################
 
 firing_rates = []
+init_time = runtime.time()
 for i in test_range:
 	args[variable] = i
-	firing_rates.append(test.main(args))
+	var_frs = test.main(init_time, test_range.index(i), len(test_range), args)
+	firing_rates.append(var_frs)
 
 ###########################################
 ####   CALCULATIONS   #####################
@@ -91,7 +94,6 @@ for n in firing_rates[0].keys():
 	y_axis = spline(test_range, [dic[n] for dic in tun_curve_w], x_axis)
 	plt.plot(x_axis, y_axis, plt_sty)
 
-# Final display of runtime
-#print "TOTAL SIMULATION RUNTIME: %s MINUTES" \
-#	% str(int((time.time()-start_time))/60)
+# Display results of all simulations
+runtime.final(init_time,args['freq_num'],len(test_range))
 plt.show()

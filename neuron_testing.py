@@ -1,18 +1,14 @@
 import nest
 import nest.topology as topp
 import numpy as np
-import matplotlib.pyplot as plt
-import matplotlib.lines as mlines
-import time
+import runtime
 
 # function runs simulation using dictionary of parameters
-def main(args):
+def main(init_time,sim_num,sim_tot,args):
 	
 	###########################################
 	####   PARAMETERS   #######################
 	###########################################
-
-	start_time = time.time()
 
 	freq_num = args['freq_num'] # number of auditory frequencies
 	sample_size = args['sample_size'] # number of neurons to record from
@@ -88,35 +84,6 @@ def main(args):
 	nest.SetKernelStatus({'local_num_threads': 4}) # threading for efficiency
 
 	###########################################
-	####   DISPLAY FUNCTIONS   ################
-	###########################################
-
-	# Resize variables for printing to terminal window
-	def clip_print(item,clip_size,clip_fill):
-		curr_size = len(str(item))
-		if curr_size >= clip_size:
-			return item
-		else:
-			return str(clip_fill) * (clip_size - curr_size) + str(item)
-
-	# Print to terminal window live updates with simulation information
-	def live_update(x):
-		tot_runtime = time.time()-start_time
-		sim_runtime = time.time()-sim_start_time
-		if x == 0:
-			est_wait = '~'
-		else:
-			est_wait = int((freq_num*sim_runtime/x-sim_runtime)/60+0.5)
-		print "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
-		print "XXX   WORKING ON SIMULATION %s of %s   XXX" \
-			% (clip_print(x+1,2,'0'), clip_print(freq_num,2,'0'))
-		print "XXX      %s MINUTES HAVE PASSED       XXX" \
-			% clip_print(int(tot_runtime/60),3,' ')
-		print "XXX   %s MINUTES REMAINING (APPROX)   XXX" \
-			% (clip_print(est_wait,3,' '))
-		print "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
-
-	###########################################
 	####   NETWORK SETUP   ####################
 	###########################################
 
@@ -157,12 +124,10 @@ def main(args):
 		'inh': [[] for i in range(sample_size)]
 	}
 
-	sim_start_time = time.time()
-
 	for freq in range(freq_num):
 		nest.ResetNetwork()
 		nest.SetKernelStatus({'time': 0.0})
-		live_update(freq)
+		runtime.live_update(init_time, freq, freq_num, sim_num, sim_tot)
 		
 		# Set rate for stim_layer neurons based on frequency of stimulus
 		for row in range(amp_factor):

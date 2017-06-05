@@ -1,10 +1,10 @@
 import nest
 import nest.topology as topp
 import numpy as np
-import runtime
+from runtime import Runtime
 
 # function runs simulation using dictionary of parameters
-def main(init_time,sim_num,sim_tot,args):
+def main(args,rt,sim_num,var_id):
 	
 	###########################################
 	####   PARAMETERS   #######################
@@ -124,7 +124,7 @@ def main(init_time,sim_num,sim_tot,args):
 	for freq in range(freq_num):
 		nest.ResetNetwork()
 		nest.SetKernelStatus({'time': 0.0})
-		runtime.live_update(init_time, freq, freq_num, sim_num, sim_tot)
+		rt.live_update(freq, sim_num, var_id)
 		
 		# Set rate for stim_layer neurons based on frequency of stimulus
 		for row in range(amp_factor):

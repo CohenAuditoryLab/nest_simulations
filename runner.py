@@ -55,7 +55,7 @@ var_dict = {
 	'stim_conn_rad': [0.1*(i+1) for i in range(9)],
 	'stim_conn_p_center': [0.1*(i+1) for i in range(9)],
 	'stim_conn_p_sigma': [0.1*(i+1) for i in range(9)],
-	'stim_conn_weight_center': 10.0,
+	'stim_conn_weight_center': [i+5 for i in range(20)],
 	'stim_conn_weight_sigma': [0.1*(i+1) for i in range(9)],
 	'pyr_conn_rad': [0.1*(i+1) for i in range(9)],
 	'pyr_conn_p_center': [0.1*(i+1) for i in range(9)],

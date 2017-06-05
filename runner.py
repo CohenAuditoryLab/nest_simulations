@@ -22,10 +22,6 @@ args = {
 
 	'pyr_layer_num': 500,
 	'inh_layer_num': 100,
-	'sample_sizes': {
-		'pyr': 10*500,
-		'inh': 10*100
-	},
 
 	'stim_conn_rad': 0.25,
 	'stim_conn_p_center': 1.0,

@@ -20,8 +20,6 @@ def main(init_time,sim_num,sim_tot,args):
 
 	neuron_mod = args['neuron_mod']
 
-	sample_sizes = args['sample_sizes'] # dictionary of neuron sample numbers
-
 	stim_layer_param = {
 		'extent'   : grid_size,  # size of layer (nm^2)
 		'rows'     : amp_factor, # strength of signal amplification
@@ -80,6 +78,11 @@ def main(init_time,sim_num,sim_tot,args):
 		}}
 	}
 
+	neuron_nums = {
+		'pyr': pyr_layer_param['rows']*pyr_layer_param['columns'],
+		'inh': inh_layer_param['rows']*inh_layer_param['columns']
+	}
+
 	np.random.seed(args['seed']) # set numpy seed for reproducability
 	nest.ResetKernel() # reset NEST
 	nest.SetKernelStatus({'local_num_threads': 4}) # threading for efficiency
@@ -105,17 +108,8 @@ def main(init_time,sim_num,sim_tot,args):
 		'pyr': nest.Create('spike_detector'),
 		'inh': nest.Create('spike_detector')
 	}
-	rec_neurons = {
-		'pyr': np.random.choice(nest.GetNodes(layers['pyr'])[0],
-		                        size=sample_sizes['pyr'], 
-		                        replace=False).tolist(),
-		'inh': np.random.choice(nest.GetNodes(layers['inh'])[0],
-		                        size=sample_sizes['inh'], 
-		                        replace=False).tolist()
-	}
-	for n in rec_neurons.keys():
-		rec_neurons[n].sort()
-		nest.Connect(rec_neurons[n], spk_det[n])
+	for n in spk_det.keys():
+		nest.Connect(nest.GetNodes(layers[n])[0], spk_det[n])
 
 	###########################################
 	####   SIMULATION   #######################
@@ -123,8 +117,8 @@ def main(init_time,sim_num,sim_tot,args):
 
 	# Initialize dictionary of firing rates
 	firing_rates = {
-		'pyr': [[] for i in range(sample_sizes['pyr'])],
-		'inh': [[] for i in range(sample_sizes['inh'])]
+		'pyr': [[] for i in range(neuron_nums['pyr'])],
+		'inh': [[] for i in range(neuron_nums['inh'])]
 	}
 
 	for freq in range(freq_num):
@@ -144,11 +138,11 @@ def main(init_time,sim_num,sim_tot,args):
 		nest.Simulate(sim_time)
 		
 		# Store firing rate data for each set of neurons
-		for n in rec_neurons.keys():
-			sender_fires = [0] * sample_sizes[n]
+		for n in spk_det.keys():
+			sender_fires = [0] * neuron_nums[n]
 			for i in nest.GetStatus(spk_det[n])[0]['events']['senders']:
-				sender_fires[rec_neurons[n].index(i)] += 1
-			for i in range(sample_sizes[n]):
+				sender_fires[nest.GetNodes(layers[n])[0].index(i)] += 1
+			for i in range(neuron_nums[n]):
 				firing_rates[n][i].append(1000*sender_fires[i]/sim_time)
 		
 		# Reset rates for stim_layer neurons

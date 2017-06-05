@@ -1,7 +1,6 @@
 import neuron_testing as test
 import matplotlib.pyplot as plt
 import matplotlib.lines as mlines
-from scipy.interpolate import spline
 import numpy as np
 import runtime
 
@@ -11,8 +10,7 @@ import runtime
 
 # Reference external function for 
 args = {
-	'freq_num': 5,
-	'sample_size': 20,
+	'freq_num': 10,
 	'amp_factor': 100,
 	'sim_time': 200.0,
 	'grid_size': [5.0,5.0],
@@ -24,6 +22,10 @@ args = {
 
 	'pyr_layer_num': 500,
 	'inh_layer_num': 100,
+	'sample_sizes': {
+		'pyr': 10*500,
+		'inh': 10*100
+	},
 
 	'stim_conn_rad': 0.25,
 	'stim_conn_p_center': 1.0,
@@ -48,7 +50,7 @@ args = {
 
 # Specify independent variable and test range
 variable = 'tun_rad'
-test_range = [i+1 for i in range(5)]
+test_range = [i+1 for i in range(10)]
 
 ###########################################
 ####   SIMULATION   #######################
@@ -67,10 +69,13 @@ for i in test_range:
 
 # Calculate tuning curve widths
 tun_curve_w = [{} for i in test_range]
+tun_curve_std = [{} for i in test_range]
 for i in range(len(firing_rates)):
 	for n in firing_rates[i].keys():
 		tuning_widths = [len(j)-j.count(0.0) for j in firing_rates[i][n]]
 		tun_curve_w[i][n] = np.mean(tuning_widths)
+		neuron_num = args['freq_num']*args[n+'_layer_num']
+		tun_curve_std[i][n] = np.std(tuning_widths)
 
 ###########################################
 ####   GRAPHS   ###########################
@@ -90,9 +95,10 @@ for n in firing_rates[0].keys():
 		plt_sty = 'b-'
 	else:
 		plt_sty = 'r-'
-	x_axis = np.linspace(min(test_range), max(test_range), 100)
-	y_axis = spline(test_range, [dic[n] for dic in tun_curve_w], x_axis)
-	plt.plot(x_axis, y_axis, plt_sty)
+	y_axis = [dic[n] for dic in tun_curve_w]
+	plt.plot(test_range, y_axis, plt_sty)
+	plt.errorbar(test_range, y_axis, yerr=[dic[n] for dic in tun_curve_std], 
+		         fmt=plt_sty)
 
 # Display results of all simulations
 runtime.final(init_time,args['freq_num'],len(test_range))

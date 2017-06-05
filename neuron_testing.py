@@ -11,7 +11,6 @@ def main(init_time,sim_num,sim_tot,args):
 	###########################################
 
 	freq_num = args['freq_num'] # number of auditory frequencies
-	sample_size = args['sample_size'] # number of neurons to record from
 	amp_factor = args['amp_factor'] # strength of signal coming from generators
 	sim_time = args['sim_time'] # duration of simulation (ms)
 	grid_size = args['grid_size'] # side lengths of topological layers (nm)
@@ -20,6 +19,8 @@ def main(init_time,sim_num,sim_tot,args):
 	tun_rad = args['tun_rad'] # broadness of tuning curve
 
 	neuron_mod = args['neuron_mod']
+
+	sample_sizes = args['sample_sizes'] # dictionary of neuron sample numbers
 
 	stim_layer_param = {
 		'extent'   : grid_size,  # size of layer (nm^2)
@@ -106,9 +107,11 @@ def main(init_time,sim_num,sim_tot,args):
 	}
 	rec_neurons = {
 		'pyr': np.random.choice(nest.GetNodes(layers['pyr'])[0],
-		                        size=sample_size, replace=False).tolist(),
+		                        size=sample_sizes['pyr'], 
+		                        replace=False).tolist(),
 		'inh': np.random.choice(nest.GetNodes(layers['inh'])[0],
-		                       size=sample_size, replace=False).tolist()
+		                        size=sample_sizes['inh'], 
+		                        replace=False).tolist()
 	}
 	for n in rec_neurons.keys():
 		rec_neurons[n].sort()
@@ -120,8 +123,8 @@ def main(init_time,sim_num,sim_tot,args):
 
 	# Initialize dictionary of firing rates
 	firing_rates = {
-		'pyr': [[] for i in range(sample_size)],
-		'inh': [[] for i in range(sample_size)]
+		'pyr': [[] for i in range(sample_sizes['pyr'])],
+		'inh': [[] for i in range(sample_sizes['inh'])]
 	}
 
 	for freq in range(freq_num):
@@ -142,10 +145,10 @@ def main(init_time,sim_num,sim_tot,args):
 		
 		# Store firing rate data for each set of neurons
 		for n in rec_neurons.keys():
-			sender_fires = [0] * sample_size
+			sender_fires = [0] * sample_sizes[n]
 			for i in nest.GetStatus(spk_det[n])[0]['events']['senders']:
 				sender_fires[rec_neurons[n].index(i)] += 1
-			for i in range(sample_size):
+			for i in range(sample_sizes[n]):
 				firing_rates[n][i].append(1000*sender_fires[i]/sim_time)
 		
 		# Reset rates for stim_layer neurons

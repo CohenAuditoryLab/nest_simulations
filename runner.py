@@ -2,6 +2,7 @@ import neuron_testing as test
 import matplotlib.pyplot as plt
 import matplotlib.lines as mlines
 import numpy as np
+import scipy.stats as stats
 from runtime import Runtime
 
 ###########################################
@@ -44,6 +45,7 @@ args = {
 	'inh_conn_weight_center': 1.5,
 	'inh_conn_weight_sigma': 1.0,
 
+	'sample_size': 400,
 	'seed': 10
 }
 
@@ -89,15 +91,15 @@ for variable in var_dict.keys():
 	####   CALCULATIONS   #####################
 	###########################################
 
-	# Calculate tuning curve widths
+	# Calculate tuning curve widths and error bars
 	tun_curve_w = [{} for i in test_range]
-	tun_curve_std = [{} for i in test_range]
+	tun_curve_sem = [{} for i in test_range]
 	for i in range(len(firing_rates)):
 		for n in firing_rates[i].keys():
 			tuning_widths = [len(j)-j.count(0.0) for j in firing_rates[i][n]]
 			tun_curve_w[i][n] = np.mean(tuning_widths)
 			neuron_num = args['freq_num']*args[n+'_layer_num']
-			tun_curve_std[i][n] = np.std(tuning_widths)
+			tun_curve_sem[i][n] = stats.sem(tuning_widths)
 
 	###########################################
 	####   GRAPHS   ###########################
@@ -121,8 +123,8 @@ for variable in var_dict.keys():
 			plt_sty = 'r-'
 		y_axis = [dic[n] for dic in tun_curve_w]
 		plt.plot(test_range, y_axis, plt_sty)
-		plt.errorbar(test_range, y_axis, yerr=[dic[n] for dic in tun_curve_std], 
-			         fmt=plt_sty)
+		plt.errorbar(test_range, y_axis, 
+			         yerr=[dic[n] for dic in tun_curve_sem], fmt=plt_sty)
 
 # Display results of all simulations
 rt.final(send_msg)

@@ -78,12 +78,9 @@ def main(args,rt,sim_num,var_id):
 		}}
 	}
 
-	neuron_nums = {
-		'pyr': pyr_layer_param['rows']*pyr_layer_param['columns'],
-		'inh': inh_layer_param['rows']*inh_layer_param['columns']
-	}
-
+	sample_size = args['sample_size'] # number of neurons to randomly sample
 	np.random.seed(args['seed']) # set numpy seed for reproducability
+	
 	nest.ResetKernel() # reset NEST
 	nest.SetKernelStatus({'local_num_threads': 4}) # threading for efficiency
 
@@ -108,8 +105,16 @@ def main(args,rt,sim_num,var_id):
 		'pyr': nest.Create('spike_detector'),
 		'inh': nest.Create('spike_detector')
 	}
+	rec_neurons = {
+  		'pyr': np.random.choice(nest.GetNodes(layers['pyr'])[0],
+ 		                        size=sample_size, 
+ 		                        replace=False).tolist(),
+ 		'inh': np.random.choice(nest.GetNodes(layers['inh'])[0],
+ 		                        size=sample_size, 
+ 		                        replace=False).tolist()
+  	}
 	for n in spk_det.keys():
-		nest.Connect(nest.GetNodes(layers[n])[0], spk_det[n])
+		nest.Connect(rec_neurons[n], spk_det[n])
 
 	###########################################
 	####   SIMULATION   #######################
@@ -117,8 +122,8 @@ def main(args,rt,sim_num,var_id):
 
 	# Initialize dictionary of firing rates
 	firing_rates = {
-		'pyr': [[] for i in range(neuron_nums['pyr'])],
-		'inh': [[] for i in range(neuron_nums['inh'])]
+		'pyr': [[] for i in range(sample_size)],
+		'inh': [[] for i in range(sample_size)]
 	}
 
 	for freq in range(freq_num):
@@ -139,10 +144,10 @@ def main(args,rt,sim_num,var_id):
 		
 		# Store firing rate data for each set of neurons
 		for n in spk_det.keys():
-			sender_fires = [0] * neuron_nums[n]
+			sender_fires = [0] * sample_size
 			for i in nest.GetStatus(spk_det[n])[0]['events']['senders']:
-				sender_fires[nest.GetNodes(layers[n])[0].index(i)] += 1
-			for i in range(neuron_nums[n]):
+				sender_fires[rec_neurons[n].index(i)] += 1
+			for i in range(sample_size):
 				firing_rates[n][i].append(1000*sender_fires[i]/sim_time)
 		
 		# Reset rates for stim_layer neurons

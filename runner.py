@@ -75,6 +75,7 @@ rt = Runtime(var_dict,args['freq_num'])
 
 # Run simulations for each specified variable
 for variable in var_dict.keys():
+	args_default = args[variable]
 	test_range = var_dict[variable]
 
 	###########################################
@@ -125,6 +126,9 @@ for variable in var_dict.keys():
 		plt.plot(test_range, y_axis, plt_sty)
 		plt.errorbar(test_range, y_axis, 
 			         yerr=[dic[n] for dic in tun_curve_sem], fmt=plt_sty)
+
+	# Reset variable to default value
+	args[variable] = args_default
 
 # Display results of all simulations
 rt.final(send_msg)

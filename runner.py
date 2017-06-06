@@ -16,7 +16,7 @@ send_msg = True
 args = {
 	'freq_num': 20,
 	'amp_factor': 100,
-	'sim_time': 200.0,
+	'sim_time': 100.0,
 	'grid_size': [5.0,5.0],
 
 	'base_stim_rate': 2000.0,

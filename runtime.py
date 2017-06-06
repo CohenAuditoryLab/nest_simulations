@@ -98,4 +98,4 @@ class Runtime(object):
 		in_board = '\n' + 'X' + ' '*(len(txt)-2) + 'X' + '\n'
 		print out_board + in_board + txt + in_board + out_board
 		if send_mail:
-			email('Your Simulations are Complete',txt[4::])
+			self.email('Your Simulations are Complete',txt[4::])

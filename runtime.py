@@ -59,7 +59,7 @@ class Runtime(object):
 		tot_sim = len(self.sim_dict[var_id])
 		total_trials = 0
 		for var in self.sim_dict.keys():
-			total_trials += self.tot_freq*len(sim_dict[var])
+			total_trials += self.tot_freq*len(self.sim_dict[var])
 		
 		elapsed_time = time()-self.init_time
 		

@@ -57,14 +57,16 @@ class Runtime(object):
 		for var in self.completed_vars:
 			completed_trials += self.tot_freq*len(self.sim_dict[var])
 		tot_sim = len(self.sim_dict[var_id])
-		total_freq = self.tot_freq*tot_sim
+		total_trials = 0
+		for var in self.sim_dict.keys():
+			total_trials += self.tot_freq*len(sim_dict[var])
 		
 		elapsed_time = time()-self.init_time
 		
 		if completed_trials == 0:
 			est_wait = -1
 		else:
-			est_tot_time = (elapsed_time/completed_trials)*total_freq
+			est_tot_time = (elapsed_time/completed_trials)*total_trials
 			est_wait = sec_to_min(est_tot_time - elapsed_time,True)
 		
 		txts = [

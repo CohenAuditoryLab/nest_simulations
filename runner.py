@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import matplotlib.lines as mlines
 import numpy as np
 import scipy.stats as stats
+from time import strftime
 from runtime import Runtime
 
 ###########################################
@@ -57,7 +58,7 @@ var_dict = {
 	'stim_conn_rad': [0.1*(i+1) for i in range(9)],
 	'stim_conn_p_center': [0.1*(i+1) for i in range(9)],
 	'stim_conn_p_sigma': [0.1*(i+1) for i in range(9)],
-	'stim_conn_weight_center': [i+5 for i in range(20)],
+	'stim_conn_weight_center': [float(i+5) for i in range(20)],
 	'stim_conn_weight_sigma': [0.1*(i+1) for i in range(9)],
 	'pyr_conn_rad': [0.1*(i+1) for i in range(9)],
 	'pyr_conn_p_center': [0.1*(i+1) for i in range(9)],
@@ -129,6 +130,7 @@ for variable in var_dict.keys():
 
 	# Reset variable to default value
 	args[variable] = args_default
+	plt.savefig('figures/%s %s.png' % (variable,strftime("%Y-%m-%d %H:%M")))
 
 # Display results of all simulations
 rt.final(send_msg)

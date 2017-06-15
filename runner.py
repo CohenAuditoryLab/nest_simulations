@@ -10,10 +10,13 @@ from runtime import Runtime
 ####   PARAMETERS   #######################
 ###########################################
 
-# Send an email when code has run to completion
+# Send an email when code has run to completion?
 send_msg = True
 
-# Reference external function for 
+# Display all graphs to screen?
+show_graphs = False
+
+# Reference neuron_testing.py for more information on arguments
 args = {
 	'freq_num': 20,
 	'amp_factor': 100,
@@ -21,20 +24,20 @@ args = {
 	'grid_size': [5.0,5.0],
 
 	'base_stim_rate': 2000.0,
-	'tun_rad': 5,
+	'tun_rad': 4,
 
 	'neuron_mod': 'iaf_psc_alpha',
 
 	'pyr_layer_num': 500,
-	'inh_layer_num': 100,
+	'inh_layer_num': 500,
 
 	'stim_conn_rad': 0.25,
-	'stim_conn_p_center': 1.0,
+	'stim_conn_p_center': 0.5,
 	'stim_conn_p_sigma': 1.0,
 	'stim_conn_weight_center': 10.0,
-	'stim_conn_weight_sigma': 1.0,
+	'stim_conn_weight_sigma': 0.25,
 
-	'pyr_conn_rad': 0.25,
+	'pyr_conn_rad': 0.5,
 	'pyr_conn_p_center': 1.0,
 	'pyr_conn_p_sigma': 2.0,
 	'pyr_conn_weight_center': 1.5,
@@ -54,23 +57,22 @@ args = {
 var_dict = {
 	'tun_rad': [i+1 for i in range(10)],
 	'pyr_layer_num': [100*(i+3) for i in range(10)],
-	'inh_layer_num': [50*(i+1) for i in range(10)],
-	'stim_conn_rad': [0.1*(i+1) for i in range(9)],
-	'stim_conn_p_center': [0.1*(i+1) for i in range(9)],
-	'stim_conn_p_sigma': [0.1*(i+1) for i in range(9)],
+	'inh_layer_num': [100*(i+3) for i in range(10)],
+	'stim_conn_rad': [0.1*(i+1) for i in range(10)],
+	'stim_conn_p_center': [0.1*(i+1) for i in range(10)],
+	'stim_conn_p_sigma': [0.1*(i+1) for i in range(10)],
 	'stim_conn_weight_center': [float(i+5) for i in range(20)],
-	'stim_conn_weight_sigma': [0.1*(i+1) for i in range(9)],
-	'pyr_conn_rad': [0.1*(i+1) for i in range(9)],
-	'pyr_conn_p_center': [0.1*(i+1) for i in range(9)],
+	'stim_conn_weight_sigma': [0.1*(i+1) for i in range(10)],
+	'pyr_conn_rad': [0.1*(i+1) for i in range(10)],
+	'pyr_conn_p_center': [0.1*(i+1) for i in range(10)],
 	'pyr_conn_p_sigma': [0.1*(i+1) for i in range(20)],
 	'pyr_conn_weight_center': [0.1*(i+1) for i in range(20)],
-	'pyr_conn_weight_sigma': [0.1*(i+1) for i in range(9)],
-	'inh_conn_rad': [0.1*(i+1) for i in range(9)],
-	'inh_conn_p_center': [0.1*(i+1) for i in range(9)],
-	'inh_conn_p_sigma': [0.1*(i+1) for i in range(9)],
+	'pyr_conn_weight_sigma': [0.1*(i+1) for i in range(10)],
+	'inh_conn_rad': [0.1*(i+1) for i in range(10)],
+	'inh_conn_p_center': [0.1*(i+1) for i in range(10)],
+	'inh_conn_p_sigma': [0.1*(i+1) for i in range(10)],
 	'inh_conn_weight_center': [0.1*(i+1) for i in range(20)],
-	'inh_conn_weight_sigma': [0.1*(i+1) for i in range(9)],
-	'seed': [i+1 for i in range(10)]
+	'inh_conn_weight_sigma': [0.1*(i+1) for i in range(10)]
 }
 rt = Runtime(var_dict,args['freq_num'])
 
@@ -113,9 +115,6 @@ for variable in var_dict.keys():
 	plt.title("Tuning Curve Width v %s" % variable)
 	plt.xlabel(variable)
 	plt.ylabel('tuning curve width')
-	pyr_lab = mlines.Line2D([],[],color='blue',label='pyramidal')
-	inh_lab = mlines.Line2D([],[],color='red',label='inhibitory')
-	plt.legend(handles=[pyr_lab,inh_lab])
 
 	# Plot separate tuning curve data for pyramidal and inhibitory neurons
 	for n in firing_rates[0].keys():
@@ -134,4 +133,5 @@ for variable in var_dict.keys():
 
 # Display results of all simulations
 rt.final(send_msg)
-plt.show()
+if show_graphs:
+	plt.show()

@@ -82,7 +82,7 @@ def main(args,rt,sim_num,var_id):
 	np.random.seed(args['seed']) # set numpy seed for reproducability
 	
 	nest.ResetKernel() # reset NEST
-	nest.SetKernelStatus({'local_num_threads': 4}) # threading for efficiency
+	nest.SetKernelStatus({'local_num_threads': 3}) # threading for efficiency
 
 	###########################################
 	####   NETWORK SETUP   ####################

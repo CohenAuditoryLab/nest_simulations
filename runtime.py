@@ -34,7 +34,7 @@ class Runtime(object):
 				self.tot_trials += self.tot_freq \
 				                   * len(self.sim_dict[var_pair[0]]) \
 					               * len(self.sim_dict[var_pair[1]])
-			self.tot_var = factorial(self.tot_var)
+			self.tot_var = factorial(self.tot_var)/factorial(self.tot_var-2)/2
 		else:
 			for key in sim_dict.keys():
 				self.tot_trials += len(sim_dict[key])*self.tot_freq

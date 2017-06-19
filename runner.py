@@ -49,6 +49,12 @@ args = {
 	'inh_conn_weight_center': 1.5,
 	'inh_conn_weight_sigma': 1.0,
 
+	'pypy_conn_rad': 0.5,
+	'pypy_conn_p_center': 1.0,
+	'pypy_conn_p_sigma': 2.0,
+	'pypy_conn_weight_center': 1.5,
+	'pypy_conn_weight_sigma': 1.0,
+
 	'sample_size': 400,
 	'seed': 10
 }
@@ -62,17 +68,22 @@ var_dict = {
 	'stim_conn_p_center': [0.1*(i+1) for i in range(10)],
 	'stim_conn_p_sigma': [0.1*(i+1) for i in range(10)],
 	'stim_conn_weight_center': [float(i+5) for i in range(20)],
-	'stim_conn_weight_sigma': [0.1*(i+1) for i in range(10)],
+	'stim_conn_weight_sigma': [0.1*(i+1) for i in range(20)],
 	'pyr_conn_rad': [0.1*(i+1) for i in range(10)],
 	'pyr_conn_p_center': [0.1*(i+1) for i in range(10)],
 	'pyr_conn_p_sigma': [0.1*(i+1) for i in range(20)],
 	'pyr_conn_weight_center': [0.1*(i+1) for i in range(20)],
-	'pyr_conn_weight_sigma': [0.1*(i+1) for i in range(10)],
+	'pyr_conn_weight_sigma': [0.1*(i+1) for i in range(20)],
 	'inh_conn_rad': [0.1*(i+1) for i in range(10)],
 	'inh_conn_p_center': [0.1*(i+1) for i in range(10)],
-	'inh_conn_p_sigma': [0.1*(i+1) for i in range(10)],
+	'inh_conn_p_sigma': [0.1*(i+1) for i in range(20)],
 	'inh_conn_weight_center': [0.1*(i+1) for i in range(20)],
-	'inh_conn_weight_sigma': [0.1*(i+1) for i in range(10)]
+	'inh_conn_weight_sigma': [0.1*(i+1) for i in range(20)],
+	'pypy_conn_rad': [0.1*(i+1) for i in range(10)],
+	'pypy_conn_p_center': [0.1*(i+1) for i in range(10)],
+	'pypy_conn_p_sigma': [0.1*(i+1) for i in range(20)],
+	'pypy_conn_weight_center': [0.1*(i+1) for i in range(20)],
+	'pypy_conn_weight_sigma': [0.1*(i+1) for i in range(20)]
 }
 rt = Runtime(var_dict,args['freq_num'])
 

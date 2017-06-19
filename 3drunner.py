@@ -49,6 +49,12 @@ args = {
 	'inh_conn_weight_center': 1.5,
 	'inh_conn_weight_sigma': 1.0,
 
+	'pypy_conn_rad': 0.5,
+	'pypy_conn_p_center': 1.0,
+	'pypy_conn_p_sigma': 2.0,
+	'pypy_conn_weight_center': 1.5,
+	'pypy_conn_weight_sigma': 1.0,
+
 	'sample_size': 400,
 	'seed': 10
 }

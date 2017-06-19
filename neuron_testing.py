@@ -77,6 +77,19 @@ def main(args,rt,sim_num,var_id):
 			'max': 0.0
 		}}
 	}
+	pypy_conn_param = {
+		'connection_type': 'divergent', # connection based on target layer
+		'mask': {'circular': {'radius': grid_size[0]*args['pypy_conn_rad']}},
+		'kernel': {'gaussian': { # connection probability based on distance
+			'p_center': args['pypy_conn_p_center'],
+			'sigma': args['pypy_conn_p_sigma']
+		}},
+		'weights': {'gaussian': { # weight of connection based on distance
+			'p_center': args['pypy_conn_weight_center'],
+			'sigma': args['pypy_conn_weight_sigma'],
+			'min': 0.0
+		}}
+	}
 
 	sample_size = args['sample_size'] # number of neurons to randomly sample
 	np.random.seed(args['seed']) # set numpy seed for reproducability
@@ -99,6 +112,7 @@ def main(args,rt,sim_num,var_id):
 	topp.ConnectLayers(layers['stim'], layers['pyr'], stim_conn_param)
 	topp.ConnectLayers(layers['pyr'], layers['inh'], pyr_conn_param)
 	topp.ConnectLayers(layers['inh'], layers['pyr'], inh_conn_param)
+	topp.ConnectLayers(layers['pyr'], layers['pyr'], pypy_conn_param)
 
 	# Connect spike detectors to random recording neurons
 	spk_det = {

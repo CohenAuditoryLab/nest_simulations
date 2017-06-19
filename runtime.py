@@ -1,4 +1,6 @@
 import smtplib
+from math import factorial
+from itertools import combinations
 from email.MIMEText import MIMEText
 from email.header import Header
 from time import time
@@ -19,16 +21,26 @@ def sec_to_min(secs,round_up=False):
 
 class Runtime(object):
 
-	def __init__(self,sim_dict,tot_freq,to_mail='2489351405@txt.att.net'):
+	# var_type is either 'single' or 'double' (manipulating 1 variable or 2)
+	def __init__(self,sim_dict,tot_freq,var_type='single',
+		         to_mail='2489351405@txt.att.net'):
 		self.sim_dict = sim_dict
 		self.tot_freq = tot_freq
+		self.var_type = var_type
 		self.tot_var = len(sim_dict)
+		self.tot_trials = 0
+		if self.var_type == 'double':
+			for var_pair in combinations(sim_dict.keys(),2):
+				self.tot_trials += self.tot_freq \
+				                   * len(self.sim_dict[var_pair[0]]) \
+					               * len(self.sim_dict[var_pair[1]])
+			self.tot_var = factorial(self.tot_var)/factorial(self.tot_var-2)/2
+		else:
+			for key in sim_dict.keys():
+				self.tot_trials += len(sim_dict[key])*self.tot_freq
 		self.completed_vars = []
 		self.init_time = time()
 		self.to_mail = to_mail
-		self.tot_trials = 0
-		for key in sim_dict.keys():
-			self.tot_trials += len(sim_dict[key])*tot_freq
 
 	# Add a variable to the list of completed variables
 	def inc_var(self, var_id):
@@ -53,25 +65,35 @@ class Runtime(object):
 
 	# Print to terminal window live updates with simulation information
 	def live_update(self,curr_freq,curr_sim,var_id):
+		elapsed_time = time()-self.init_time
+
+		tot_sim = 0
+		if self.var_type == 'double':
+			tot_sim = len(self.sim_dict[var_id[0]]) \
+					  * len(self.sim_dict[var_id[1]])
+			var_fill = ' PAIR'
+		else:
+			tot_sim = len(self.sim_dict[var_id])
+			var_fill = ''
+
 		completed_trials = self.tot_freq*curr_sim + curr_freq
 		for var in self.completed_vars:
-			completed_trials += self.tot_freq*len(self.sim_dict[var])
-		tot_sim = len(self.sim_dict[var_id])
-		total_trials = 0
-		for var in self.sim_dict.keys():
-			total_trials += self.tot_freq*len(self.sim_dict[var])
-		
-		elapsed_time = time()-self.init_time
+			if self.var_type == 'double':
+				completed_trials += self.tot_freq \
+				                    * len(self.sim_dict[var_id[0]]) \
+					                * len(self.sim_dict[var_id[1]])
+			else:
+				completed_trials += self.tot_freq*len(self.sim_dict[var])
 		
 		if completed_trials == 0:
 			est_wait = -1
 		else:
-			est_tot_time = (elapsed_time/completed_trials)*total_trials
+			est_tot_time = (elapsed_time/completed_trials)*self.tot_trials
 			est_wait = sec_to_min(est_tot_time - elapsed_time,True)
 		
 		txts = [
-			('XXX TESTING VARIABLE %s of %s') \
-				% (fill_print(len(self.completed_vars)+1,2,'0'),
+			('XXX TESTING VARIABLE%s %s of %s ') \
+				% (var_fill,fill_print(len(self.completed_vars)+1,2,'0'),
 				   fill_print(self.tot_var,2,'0')),
 			('XXX RUNNING SIMULATION %s of %s ' \
 				% (fill_print(curr_sim+1,2,'0'),fill_print(tot_sim,2,'0'))),
@@ -91,8 +113,12 @@ class Runtime(object):
 
 	# Print final runtime statistics to terminal window and send email update
 	def final(self,send_mail=False):
-		txt = ('X   TESTED %s VARIABLES AT %s FREQUENCIES IN %s MINUTES   X' \
-			% (str(self.tot_var), str(self.tot_freq), 
+		if self.var_type == 'double':
+			var_fill = 'VARIABLE PAIRS'
+		else:
+			var_fill = 'VARIABLES'
+		txt = ('X   TESTED %s %s AT %s FREQUENCIES IN %s MINUTES   X' \
+			% (str(self.tot_var), var_fill, str(self.tot_freq), 
 			   str(sec_to_min(time()-self.init_time,True))))
 		out_board = 'X'*len(txt)
 		in_board = '\n' + 'X' + ' '*(len(txt)-2) + 'X' + '\n'
